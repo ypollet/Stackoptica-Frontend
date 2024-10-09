@@ -17,11 +17,15 @@ export class Distance {
         this.edit_distance = false
     }
 
-    get distance() : number | undefined{
-        if(this.landmarkLeft.position == undefined || this.landmarkRight.position == undefined){
+    get distance() : [number, number, number] | undefined{
+        if(this.landmarkLeft.pose == undefined || this.landmarkRight.pose == undefined){
             return undefined
         }
-        return math.number(math.distance(this.landmarkLeft.position, this.landmarkRight.position))
+        return [
+            math.abs(this.landmarkLeft.pose.marker.x - this.landmarkRight.pose.marker.x),
+            math.abs(this.landmarkLeft.pose.marker.y - this.landmarkRight.pose.marker.y),
+            math.abs(this.landmarkLeft.pose.image - this.landmarkRight.pose.image)
+        ]
     }
 
     in(landmark : Landmark | string) : boolean{

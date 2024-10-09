@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useLandmarksStore } from "@/lib/stores";
+import { useImagesStore, useLandmarksStore } from "@/lib/stores";
 
 import { Distance } from "@/data/models/distance";
 
@@ -14,17 +14,19 @@ import * as math from "mathjs"
 import { Scale } from "@/lib/utils";
 
 const STEP = 0.01
-const ROUND = 5
 const landmarksStore = useLandmarksStore()
+const imagesStore = useImagesStore()
 
 function changeLabel(payload: string | number, distance: Distance) {
   distance.label = payload.toString() 
   console.log(distance)
 }
 
+
+
 function changeScale(payload: string | number, distance: Distance) {
   console.log(distance.distance)
-  landmarksStore.adjustFactor = math.number(payload)/distance.distance!* math.number(Scale[landmarksStore.scale as keyof typeof Scale])
+  landmarksStore.adjustFactor = math.number(payload)/math.sum(math.dotMultiply(imagesStore.voxel, distance.distance!))* math.number(Scale[landmarksStore.scale as keyof typeof Scale])
 
   console.log(landmarksStore.adjustFactor)
 }
@@ -41,8 +43,8 @@ function changeScale(payload: string | number, distance: Distance) {
                     @update:model-value="changeLabel($event, distance)" />
                 <span>:</span>
                 <Label v-show="!distance.edit_distance" class="flex whitespace-nowrap w-36"
-                    @dblclick="distance.edit_distance = true">{{ math.round(((distance.distance) ? distance.distance * landmarksStore.adjustFactor / math.number(Scale[landmarksStore.scale as keyof typeof Scale]) : 0), 5) }} {{ landmarksStore.scale }}</Label>
-                <Input v-show="distance.edit_distance" type="number" :min="0" :step="STEP" :model-value="(distance.distance) ? distance.distance * landmarksStore.adjustFactor / math.number(Scale[landmarksStore.scale as keyof typeof Scale]) : 0"
+                    @dblclick="distance.edit_distance = true">{{ math.round(((distance.distance) ? math.sum(math.dotMultiply(imagesStore.voxel, distance.distance)) * landmarksStore.adjustFactor / math.number(Scale[landmarksStore.scale as keyof typeof Scale]) : 0), 5) }} {{ landmarksStore.scale }}</Label>
+                <Input v-show="distance.edit_distance" type="number" :min="0" :step="STEP" :model-value="(distance.distance) ? math.sum(math.dotMultiply(imagesStore.voxel, distance.distance)) * landmarksStore.adjustFactor / math.number(Scale[landmarksStore.scale as keyof typeof Scale]) : 0"
                     class="flex h-auto w-36 px-0" @focusout="distance.edit_distance= false" @keyup.enter="distance.edit_distance= false"
                     @update:model-value="changeScale($event, distance)" />
                 <Button class="relative w-6 h-6 p-0" variant="destructive" @click="landmarksStore.distances.splice(index, 1)">

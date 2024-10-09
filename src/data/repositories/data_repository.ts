@@ -1,10 +1,7 @@
 import type { Repository } from "./repository";
-import type { Coordinates } from "../models/coordinates";
-import type { Shortcut } from "../models/shortcut";
-import type { VirtualCameraImage } from "../models/virtual_camera_image";
+import type { ProjectData, StackImage } from "../models/stack_image";
 
 import type { DataProvider } from "../providers/providers";
-import type { LandmarkImage } from "../models/landmark_image";
 
 export class DataRepository implements Repository {
     provider: DataProvider;
@@ -13,26 +10,17 @@ export class DataRepository implements Repository {
         this.provider = provider
     }
 
-    async getImages(objectPath: string): Promise<Array<VirtualCameraImage>> {
+    async getImages(objectPath: string): Promise<ProjectData> {
         console.log("get Images")
         return this.provider.getImages(objectPath).then((res) => {
-            let images = res.data.result.images as VirtualCameraImage[]
-            return images
+            let data = res.data.result as ProjectData
+            return data
         })
     }
 
-    async getImage(objectPath: string, imageName : string): Promise<LandmarkImage> {
+    async getImage(objectPath: string, imageName: string): Promise<StackImage> {
         return this.provider.getImage(objectPath, imageName).then((response) => {
-            return{
-                name: imageName,
-                image: response.data,
-                zoom: -1,
-                offset: {x:0, y:0},
-                versions : new Map(),
-                reprojections : new Map()
-              }
+            return response.data as StackImage
         })
-
     }
-
 }

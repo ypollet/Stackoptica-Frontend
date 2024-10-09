@@ -8,20 +8,11 @@ import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 
-import { useLandmarksStore, useImagesStore } from "@/lib/stores";
+import { useLandmarksStore } from "@/lib/stores";
 import { Landmark } from "@/data/models/landmark";
-import { type Shortcut } from "@/data/models/shortcut";
 import { Scale } from "@/lib/utils";
 
-import { RepositoryFactory } from '@/data/repositories/repository_factory'
-import { repositorySettings } from "@/config/appSettings"
-
-const repository = RepositoryFactory.get(repositorySettings.type)
-
-const imageStore = useImagesStore()
 const landmarksStore = useLandmarksStore()
-
-
 
 function addDistance(){
   let id_left = landmarksStore.selectedGroup.deque[0]

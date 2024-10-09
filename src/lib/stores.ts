@@ -1,11 +1,10 @@
 import * as math from 'mathjs'
 import { defineStore, type PiniaPluginContext, type StateTree } from 'pinia'
-import { degreesToRad } from '@/lib/utils'
 import { DequeMax2 } from '@/data/models/dequeMax2'
 import { Distance } from '@/data/models/distance'
 import { Landmark } from '@/data/models/landmark'
-import { LandmarkImage } from '@/data/models/landmark_image'
 import Color from 'color'
+import type { StackImage, Size } from '@/data/models/stack_image'
 
 export const DEFAULT_TAB = "viewer"
 
@@ -28,12 +27,14 @@ export const useImagesStore = defineStore('image', {
   state: () => ({
     objectPath: "",
     index : 0,
-    images : Array<LandmarkImage>(),
+    images : Array<StackImage>(),
+    size : { width : -1, height : -1},
+    voxel : [1,1,1],
     zoom : -1,
     offset : {x:0, y:0}
   }),
   getters: {
-    selectedImage : (state) => (state.index >= 0 && state.index < state.images.length) ?  state.images[state.index] : new LandmarkImage("RBINS Logo","https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg")
+    selectedImage : (state) => (state.index >= 0 && state.index < state.images.length) ?  state.images[state.index] : {"name":"RBINS Logo","image":"https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg"}
   },
   actions: {
     setPath(path : string) {
@@ -43,7 +44,9 @@ export const useImagesStore = defineStore('image', {
     reset() {
       this.objectPath = ""
       this.index = 0
-      this.images = Array<LandmarkImage>()
+      this.images = Array<StackImage>()
+      this.size = { width : -1, height : -1}
+      this.voxel = [1,1,1]
       this.zoom = -1
       this.offset = {x:0, y:0}
     },
@@ -101,7 +104,7 @@ export const useLandmarksStore = defineStore('landmarks', {
       // restore landmarks
       let landmarks = ctx.store.$state.landmarks.map((x: Landmark) => x)
       let landmarksToKeep = landmarks.map((jsonObject: Landmark) =>
-        new Landmark(jsonObject.id, jsonObject.label, jsonObject.version, Color(jsonObject.color), new Map(Object.entries(jsonObject.pose)), jsonObject.position)
+        new Landmark(jsonObject.id, jsonObject.label, Color(jsonObject.color))
       )
       ctx.store.$state.landmarks = landmarksToKeep
 

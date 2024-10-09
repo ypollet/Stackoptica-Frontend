@@ -1,6 +1,9 @@
 {
     "preview": "_x_00000_y_00000_.jpg",
     "thumbnails": "thumbnails",
+    "height": 3648,
+    "width": 5472,
+    "voxel": [0.003536,0.003536,0.003536],
     "stack": [
         "_x_00000_y_00000_step_45000_.jpg",
         "_x_00000_y_00000_step_44000_.jpg",

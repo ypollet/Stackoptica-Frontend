@@ -124,7 +124,7 @@ def image(id, image_name):
     print(error)
     
 #  return send_from_directory(DATA_FOLDER, f"{path}/{image_name}")
-  return image_data["image"]
+  return image_data
 
 # send images
 @app.route('/<id>/images')
@@ -147,6 +147,12 @@ def images(id):
        print(error)
        continue
   to_jsonify["images"] = encoded_images
+  to_jsonify["size"] = {
+    "width" : stack_file["width"],
+    "height" : stack_file["height"]
+  }
+  to_jsonify["voxel"] = stack_file["voxel"]
+  
   return jsonify({'result': to_jsonify})
 
 if __name__ == '__main__':

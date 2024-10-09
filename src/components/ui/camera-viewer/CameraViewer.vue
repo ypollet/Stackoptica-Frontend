@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import * as math from 'mathjs'
-import { degreesToRad } from '@/lib/utils'
-
-import { ref, watch, onMounted, type Ref } from 'vue';
+import { ref} from 'vue';
 
 import { Loader2 } from 'lucide-vue-next';
 
 import { useQuery } from '@tanstack/vue-query'
 
-import { useImagesStore, useLandmarksStore } from '@/lib/stores';
+import { useImagesStore } from '@/lib/stores';
 
-import type { Coordinates } from '@/data/models/coordinates'
-import { LandmarkImage } from "@/data/models/landmark_image"
-import type { VirtualCameraImage } from '@/data/models/virtual_camera_image'
+import type { ProjectData } from '@/data/models/stack_image'
 
 import ImageViewer from '../image-viewer/ImageViewer.vue';
 
@@ -24,22 +19,20 @@ const imageStore = useImagesStore()
 
 const imageContainer = ref<HTMLDivElement | null>(null)
 
-const selectedImage : Ref<LandmarkImage> = ref(new LandmarkImage("", ""))
-
 const { isPending, isError, data, error } = useQuery({
   queryKey: ['all_images'],
   queryFn: () => getImages(),
 })
 
-var isPressed: boolean = false
-
 const repository = RepositoryFactory.get(repositorySettings.type)
 
-function getImages(): Promise<Array<VirtualCameraImage>> {
-  return repository.getImages(imageStore.objectPath).then((images) => {
-    console.log("images : length = " + images.length)
-    imageStore.images = images
-    return images
+function getImages(): Promise<ProjectData> {
+  return repository.getImages(imageStore.objectPath).then((data) => {
+    console.log("images : length = " + data.images.length)
+    imageStore.images = data.images
+    imageStore.size = data.size
+    imageStore.voxel = data.voxel
+    return data
   })
 }
 </script>
