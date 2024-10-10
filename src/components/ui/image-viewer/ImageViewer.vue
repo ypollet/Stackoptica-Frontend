@@ -260,7 +260,7 @@ function updateOffset(movementX: number, movementY: number) {
 
 function updateZoom(zoomDelta: number) {
 
-  imageStore.zoom = +(imageStore.zoom + (zoomDelta / 50)).toFixed(2)
+  imageStore.zoom = +(imageStore.zoom * (1 + zoomDelta / 20)).toFixed(2)
 
   //check value
   imageStore.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, imageStore.zoom))
