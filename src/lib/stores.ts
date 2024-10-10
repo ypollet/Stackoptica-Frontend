@@ -50,14 +50,17 @@ export const useImagesStore = defineStore('image', {
       this.zoom = -1
       this.offset = {x:0, y:0}
     },
-    setIndex(move: number) {
+    setIndex(index : number){
+      this.index = math.min(math.max(0, index), this.images.length-1)
+    },
+    moveIndex(move: number) {
       this.index = math.min(math.max(0, this.index + move), this.images.length-1)
     },
     increment(){
-      this.setIndex(1)
+      this.moveIndex(1)
     },
     decrement(){
-      this.setIndex(-1)
+      this.moveIndex(-1)
     }
 
   },

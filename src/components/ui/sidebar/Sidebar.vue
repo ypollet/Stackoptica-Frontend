@@ -3,26 +3,28 @@ import { LandmarkList } from "@/components/ui/landmark";
 import { DistanceList } from "@/components/ui/distance";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 
-import { useLandmarksStore } from "@/lib/stores";
+import { useLandmarksStore, useImagesStore } from "@/lib/stores";
 import { Landmark } from "@/data/models/landmark";
 import { Scale } from "@/lib/utils";
 
+const imageStore = useImagesStore()
 const landmarksStore = useLandmarksStore()
 
-function addDistance(){
+function addDistance() {
   let id_left = landmarksStore.selectedGroup.deque[0]
   let id_right = landmarksStore.selectedGroup.deque[1]
-  let left : Landmark = landmarksStore.landmarks.find((x) => x.id == id_left) as Landmark
-  let right : Landmark = landmarksStore.landmarks.find((x) => x.id == id_right) as Landmark
+  let left: Landmark = landmarksStore.landmarks.find((x) => x.id == id_left) as Landmark
+  let right: Landmark = landmarksStore.landmarks.find((x) => x.id == id_right) as Landmark
   landmarksStore.addDistance(left, right)
 }
 
-function resetScale(){
+function resetScale() {
   landmarksStore.adjustFactor = 1
 }
 
@@ -34,19 +36,22 @@ console.log("Scale " + landmarksStore.scale)
   <div class="pb-[12px] w-auto">
     <div class="space-y-4 py-4">
       <div class="px-3 py-2">
+        <Slider :model-value="[imageStore.index]" :max="imageStore.images.length-1" :step="1" @update:modelValue="$event => imageStore.setIndex($event![0])" />
+      </div>
+      <div class="px-3 py-2">
         <h2 class="relative px-7 text-lg font-semibold tracking-tight">
           Landmarks
         </h2>
-          <ContextMenu>
-            <ContextMenuTrigger class="flex w-full h-full">
-              <LandmarkList/>
-            </ContextMenuTrigger>
-            <ContextMenuContent class="w-64">
-              <ContextMenuItem class="block" inset @select="addDistance">
-                Create Distance
-              </ContextMenuItem>
+        <ContextMenu>
+          <ContextMenuTrigger class="flex w-full h-full">
+            <LandmarkList />
+          </ContextMenuTrigger>
+          <ContextMenuContent class="w-64">
+            <ContextMenuItem class="block" inset @select="addDistance">
+              Create Distance
+            </ContextMenuItem>
           </ContextMenuContent>
-          </ContextMenu>
+        </ContextMenu>
       </div>
       <div class="px-3 py-2">
         <div class="flex row">
@@ -72,7 +77,7 @@ console.log("Scale " + landmarksStore.scale)
             </Button>
           </div>
         </div>
-        <DistanceList/>
+        <DistanceList />
       </div>
     </div>
   </div>
