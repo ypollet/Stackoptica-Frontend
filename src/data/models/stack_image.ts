@@ -12,7 +12,8 @@ export type Size = {
 }
 
 export type ProjectData = {
-    images: Array<StackImage>,
+    stackImages: Array<StackImage>,
+    individualImages: Map<string, StackImage>,
     size: Size,
     voxel: [number, number, number]
 }

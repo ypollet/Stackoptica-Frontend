@@ -26,6 +26,6 @@ export enum Scale {
 
 export const ZOOM_MIN = 0.1
 export const ZOOM_MAX = 4
-export const DOT_RADIUS = 4
+export const DOT_RADIUS = 4.5
 export const SPACE_TARGET = 0.2
 

@@ -9,15 +9,15 @@ import { useImagesStore } from '@/lib/stores';
 
 import type { ProjectData } from '@/data/models/stack_image'
 
-import ImageViewer from '../image-viewer/ImageViewer.vue';
+import ImageViewer from '@/components/ui/image-viewer/ImageViewer.vue';
 
 import { RepositoryFactory } from '@/data/repositories/repository_factory'
 import { repositorySettings } from "@/config/appSettings"
 
+import Label from '../label/Label.vue';
+
 
 const imageStore = useImagesStore()
-
-const imageContainer = ref<HTMLDivElement | null>(null)
 
 const { isPending, isError, data, error } = useQuery({
   queryKey: ['all_images'],
@@ -28,10 +28,11 @@ const repository = RepositoryFactory.get(repositorySettings.type)
 
 function getImages(): Promise<ProjectData> {
   return repository.getImages(imageStore.objectPath).then((data) => {
-    console.log("images : length = " + data.images.length)
-    imageStore.images = data.images
+    console.log("images : length = " + data.stackImages.length)
+    imageStore.stackImages = data.stackImages
     imageStore.size = data.size
     imageStore.voxel = data.voxel
+    imageStore.individualImages = data.individualImages
     return data
   })
 }
@@ -44,7 +45,10 @@ function getImages(): Promise<ProjectData> {
     <div v-if="isError" class="w-full h-full flex justify-center items-center">
       <div class="text-red-600">{{ error }}</div>
     </div>
-    <div v-if="data" ref="imageContainer" class="w-full h-full flex justify-center items-center">
+    <div v-if="data" class="w-full h-full flex flex-col items-center">
+      <div class="flex grow flex-row w-full justify-start">
+        <Label class="border p-2">{{ imageStore.selectedImage!.name }} {{  imageStore.index+1 }}/{{  imageStore.stackImages.length }}</Label>
+      </div>
       <ImageViewer class="object-fit" aspect-ratio="auto"
         draggable="false"/>
     </div>

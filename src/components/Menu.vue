@@ -43,7 +43,7 @@ import * as math from 'mathjs'
 
 const settingsStore = useSettingsStore()
 const landmarksStore = useLandmarksStore()
-const imageStore = useImagesStore()
+const imagesStore = useImagesStore()
 
 const isDark = useDark({
   storageKey: 'localStorage'
@@ -54,20 +54,23 @@ const toggleDark = useToggle(isDark)
 
 function downloadCsv() {
   const rows = [
-    ["Label", "Color", "X", "Y", "Z", "X_adjused", "Y_adjusted", "Z_adjusted"]
+    ["Distance", "Label", "Color", "Pose_X", "Pose_Y", "Image", "X", "Y", "Z"]
   ];
 
-  landmarksStore.landmarks.filter((landmark) => landmark.position != undefined).forEach((landmark) => {
+  landmarksStore.distances.forEach((distance) => {
+    distance.landmarks.forEach((landmark) => {
     landmark = landmark as Landmark
-    let ajdusted_pos: Array<number> = landmark.position!.map((input) => input * landmarksStore.adjustFactor)
-    let row: Array<string> = [landmark.label, landmark.getColorHEX(), landmark.position![0].toString(), landmark.position![1].toString(), landmark.position![2].toString(), ajdusted_pos[0].toString(), ajdusted_pos[1].toString(), ajdusted_pos[2].toString()]
+    let pose = landmark.pose!
+    let position = math.dotMultiply(imagesStore.voxel, [pose.marker.x, pose.marker.y, pose.image])
+    let row: Array<string> = [distance.label, landmark.label, landmark.getColorHEX(), pose.marker.x.toString(), pose.marker.y.toString(), imagesStore.stackImages[pose.image].name, position[0].toString(), position[1].toString(), position[2].toString()]
     rows.push(row)
+  })
   })
 
   let csvContent = rows.map(e => e.join(";")).join("\n");
 
   let blob: Blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  saveAs(blob, "landmarks_" + imageStore.objectPath + ".csv")
+  saveAs(blob, "landmarks_" + imagesStore.objectPath + ".csv")
 }
 
 function downloadJSON() {
@@ -75,30 +78,32 @@ function downloadJSON() {
 
   data.set('scale_factor', landmarksStore.adjustFactor)
 
-  let mapLandmark = new Map<string, Object>()
+  let distances = new Array<Object>()
 
-  landmarksStore.landmarks.forEach((landmark) => {
-    mapLandmark.set(landmark.id, {
-      "label": landmark.label,
-      "color": landmark.getColorHEX(),
-      "position": landmark.position,
-      "pose": landmark.pose
+  landmarksStore.distances.forEach((distance)=> {
+    let listLandmarks = new Array<Object>()
+
+    distance.landmarks.forEach((landmark) => {
+      listLandmarks.push({
+        "id": landmark.id,
+        "label": landmark.label,
+        "color": landmark.getColorHEX(),
+        "pose": landmark.pose
+      })
     })
-  })
-  data.set('landmarks', Object.fromEntries(mapLandmark))
 
-  let arrayDistance = new Array<Object>()
-  landmarksStore.distances.forEach((distance) => {
-    arrayDistance.push({
+    let distanceObject = {
       "label" : distance.label,
-      "left" : distance.landmarkLeft.id,
-      "right" : distance.landmarkRight.id
-    })
+      "color": distance.getColorHEX(),
+      "landmarks" : JSON.parse(JSON.stringify(listLandmarks))
+    }
+    distances.push(distanceObject)
   })
-  data.set('distances', arrayDistance)
+  data.set('distances', distances)
+
 
   var blob = new Blob([JSON.stringify(Object.fromEntries(data.entries()))], { type: "application/json;charset=utf-8" });
-  saveAs(blob, "landmarks_" + imageStore.objectPath + "_" + new Date().getTime() + ".json");
+  saveAs(blob, "landmarks_" + imagesStore.objectPath + "_" + new Date().getTime() + ".json");
 }
 
 function onSubmit(event: Event) {
@@ -118,27 +123,29 @@ function importLandmarks(jsonData: string) {
   let jsonObject = JSON.parse(jsonData)
   let mapData: Map<string, any> = new Map(Object.entries(jsonObject));
   console.log(mapData)
-  let oldIds = new Map<string, Landmark>()
-  let mapLandmarks : Map<string, Object> = new Map(Object.entries(mapData.get("landmarks")))
-  mapLandmarks.forEach((value: Object, key: string) => {
-    let landmarkMap = new Map(Object.entries(value));
-    let landmark = new Landmark(landmarksStore.generateID(), landmarkMap.get("label"), 1, Color(landmarkMap.get("color")), landmarkMap.get("pose"), landmarkMap.get("position"))
-    oldIds.set(key, landmark)
-    landmarksStore.addLandmark(landmark)
-  })
 
-  if(mapData.get("distances")){
-    mapData.get("distances").forEach((distanceObject : Object) => {
-      let distanceMap = new Map(Object.entries(distanceObject));
-      landmarksStore.addDistance(oldIds.get(distanceMap.get("left"))!, oldIds.get(distanceMap.get("right"))!, distanceMap.get("label"))
+  landmarksStore.adjustFactor = mapData.get("scale_factor")
+
+
+  let mapDistances : Array<Object> = mapData.get("landmarks")
+    mapDistances.forEach((distanceObject: Object, index: number) => {
+    let distanceMap = new Map(Object.entries(distanceObject));
+    
+    let landmarks = distanceMap.get("landmarks").map((landmarkObject : Object) => {
+      let landmarkMap = new Map(Object.entries(landmarkObject))
+      return new Landmark(landmarksStore.generateID(), landmarkMap.get("label"), landmarkMap.get("pose"), Color(landmarkMap.get("color")))
     })
-  }
+      
+    let distance = new Distance(distanceMap.get("label"), landmarks, Color(distanceMap.get("color")))
+    landmarksStore.distances.push(distance)
+  })
 }
 
 
 </script>
 
 <template>
+  <div>
   <Dialog>
     <Menubar class="rounded border-b z-100 h-10">
 
@@ -212,4 +219,5 @@ function importLandmarks(jsonData: string) {
       </form>
     </DialogContent>
   </Dialog>
+</div>
 </template>

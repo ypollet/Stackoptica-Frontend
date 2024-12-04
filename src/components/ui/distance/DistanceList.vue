@@ -1,57 +1,44 @@
 <script setup lang="ts">
-import { useImagesStore, useLandmarksStore } from "@/lib/stores";
+import { useLandmarksStore } from "@/lib/stores";
 
-import { Distance } from "@/data/models/distance";
+import { DistanceIteration } from ".";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { storeToRefs } from "pinia";
+import type { Distance } from "@/data/models/distance";
 
-import { Separator } from '@/components/ui/separator'
-import { Label } from "@/components/ui/label";
-import { Input } from '@/components/ui/input'
-import { Button } from "@/components/ui/button";
-
-import { X } from "lucide-vue-next";
-
-import * as math from "mathjs"
-import { Scale } from "@/lib/utils";
-
-const STEP = 0.01
 const landmarksStore = useLandmarksStore()
-const imagesStore = useImagesStore()
 
-function changeLabel(payload: string | number, distance: Distance) {
-  distance.label = payload.toString() 
-  console.log(distance)
+const { selectedDistanceIndex } = storeToRefs(landmarksStore)
+
+function updateSelectedDist(payload : string){
+    landmarksStore.selectedDistanceIndex = Number(payload)
 }
 
-
-
-function changeScale(payload: string | number, distance: Distance) {
-  console.log(distance.distance)
-  landmarksStore.adjustFactor = math.number(payload)/math.sum(math.dotMultiply(imagesStore.voxel, distance.distance!))* math.number(Scale[landmarksStore.scale as keyof typeof Scale])
-
-  console.log(landmarksStore.adjustFactor)
-}
+landmarksStore.$subscribe((mutation, state) => {
+    console.log("Check selected Index : " + selectedDistanceIndex.value)
+})
 </script>
 
 <template>
-    <div class="flex min-h-48 max-w-full flex flex-col border">
-        <div v-for="(distance, index) in landmarksStore.distances" class="flex flex-col w-full h-10">
-            <div class="flex row items-center justify-start space-x-3 px-3 w-full h-full">
-                <Label v-show="!distance.edit_label" class="flex whitespace-nowrap w-36"
-                    @dblclick="distance.edit_label = true">{{ distance.label }}</Label>
-                <Input v-show="distance.edit_label" type="text" :model-value="distance.label"
-                    class="flex h-auto w-36 px-0" @focusout="distance.edit_label= false" @keyup.enter="distance.edit_label= false"
-                    @update:model-value="changeLabel($event, distance)" />
-                <span>:</span>
-                <Label v-show="!distance.edit_distance" class="flex whitespace-nowrap w-36"
-                    @dblclick="distance.edit_distance = true">{{ math.round(((distance.distance) ? math.sum(math.dotMultiply(imagesStore.voxel, distance.distance)) * landmarksStore.adjustFactor / math.number(Scale[landmarksStore.scale as keyof typeof Scale]) : 0), 5) }} {{ landmarksStore.scale }}</Label>
-                <Input v-show="distance.edit_distance" type="number" :min="0" :step="STEP" :model-value="(distance.distance) ? math.sum(math.dotMultiply(imagesStore.voxel, distance.distance)) * landmarksStore.adjustFactor / math.number(Scale[landmarksStore.scale as keyof typeof Scale]) : 0"
-                    class="flex h-auto w-36 px-0" @focusout="distance.edit_distance= false" @keyup.enter="distance.edit_distance= false"
-                    @update:model-value="changeScale($event, distance)" />
-                <Button class="relative w-6 h-6 p-0" variant="destructive" @click="landmarksStore.distances.splice(index, 1)">
-                <X class="relative w-4 h-4 p-0" />
-              </Button>
-            </div>
-            <Separator class="w-full"/>
+    <div class="flex grow w-full flex-col space-y-5">
+        <Select class="flex grow w-full" :model-value="selectedDistanceIndex.toString()" @update:model-value="updateSelectedDist">
+            <SelectTrigger class="w-full">
+                <SelectValue placeholder="Pick a distance" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectGroup>
+                    <SelectLabel>Scale</SelectLabel>
+                    <SelectItem class="h-8" value="-1">
+                    </SelectItem>
+                    <SelectItem class="h-8" v-for="(distance, index) in landmarksStore.distances" :value="index.toString()">
+                        {{ distance.label }}
+                    </SelectItem>
+                </SelectGroup>
+            </SelectContent>
+        </Select>
+        <DistanceIteration v-if="landmarksStore.selectedDistance != null" :distance="landmarksStore.selectedDistance" :index="landmarksStore.selectedDistanceIndex" :showLandmarks="true" />
+        <div v-for="(map) in landmarksStore.distances.map((distanceMap, indexMap) => [distanceMap, indexMap] as [Distance, number]).filter((map) => map[1] != landmarksStore.selectedDistanceIndex)">
+            <DistanceIteration v-if="map[1] != landmarksStore.selectedDistanceIndex"  :distance="map[0]" :index="map[1]" :showLandmarks="false" @dblclick="landmarksStore.selectedDistanceIndex = map[1]" />
         </div>
     </div>
 </template>

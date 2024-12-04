@@ -2,20 +2,19 @@
 import { ref, onMounted, nextTick, type HTMLAttributes, watch, version } from 'vue'
 import { cn, ZOOM_MAX, ZOOM_MIN, DOT_RADIUS, SPACE_TARGET } from '@/lib/utils'
 import { type Coordinates } from "@/data/models/coordinates"
-import { Landmark } from "@/data/models/landmark"
+import { Landmark, type Pose } from "@/data/models/landmark"
 import { useLandmarksStore, useImagesStore } from '@/lib/stores'
-import {
-  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger,
-} from '@/components/ui/context-menu'
 import { RepositoryFactory } from '@/data/repositories/repository_factory'
 import { repositorySettings } from "@/config/appSettings"
 import type { Ratio } from '@/data/models/stack_image'
+import { Distance } from '@/data/models/distance'
+import type Color from 'color'
 
 
 const repository = RepositoryFactory.get(repositorySettings.type)
 
 const landmarksStore = useLandmarksStore()
-const imageStore = useImagesStore()
+const imagesStore = useImagesStore()
 
 landmarksStore.$subscribe((mutation, state) => {
   update()
@@ -25,7 +24,7 @@ const props = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-imageStore.$subscribe((mutation, state) => {
+imagesStore.$subscribe((mutation, state) => {
   update()
 })
 
@@ -38,8 +37,6 @@ const shiftCanvas = ref<Coordinates>({ x: 0, y: 0 })
 const dragging = ref<boolean>(false)
 const landmarkDragged = ref<Landmark | null>(null)
 const draggedPos = ref<Coordinates>({ x: -1, y: -1 })
-const posContextMenu = ref<Coordinates>({ x: -1, y: -1 })
-const contextMenuOpen = ref<boolean>(false)
 
 const degrees_to_radians = (deg: number) => (deg * Math.PI) / 180.0; // Convert degrees to radians using the formula: radians = (degrees * Math.PI) / 180
 
@@ -60,14 +57,15 @@ onMounted(() => {
 
 function loaded() {
   nextTick(() => {
-    if (imageStore.zoom <= 0) {
+    if (imagesStore.zoom <= 0) {
+      console.log("Screen Fit")
       screenFit()
     }
     if (base_image.value!.alt.startsWith("Thumbnail")) {
-      let image_name = imageStore.selectedImage.name
+      let image_name = imagesStore.selectedImage!.name
       setTimeout(() => {
-        if(image_name == imageStore.selectedImage.name){
-          repository.getImage(imageStore.objectPath, imageStore.selectedImage.name).then((image) => {
+        if (image_name == imagesStore.selectedImage!.name) {
+          repository.getImage(imagesStore.objectPath, imagesStore.selectedImage!.name).then((image) => {
             nextTick(() => {
               // Just verifies we draw the right image
               if (base_image.value!.alt.endsWith(image.name)) {
@@ -79,7 +77,7 @@ function loaded() {
           })
         }
       }, 500);
-      
+
     }
 
     update()
@@ -87,17 +85,19 @@ function loaded() {
 }
 
 function drawImage() {
-  if (canvas.value && base_image.value && base_image.value.complete && imageStore.zoom > 0) {
+  if (canvas.value && base_image.value && base_image.value.complete && imagesStore.zoom > 0) {
     let ratio = getRatio()
 
     let ctx = canvas.value.getContext("2d")!
 
-    let zoomX = imageStore.zoom / ratio.ratioW
-    let zoomY = imageStore.zoom / ratio.ratioH
+    let zoomX = imagesStore.zoom / ratio.ratioW
+    let zoomY = imagesStore.zoom / ratio.ratioH
+
+    let radius = DOT_RADIUS / zoomX
 
     ctx.scale(zoomX, zoomY)
 
-    ctx.translate(imageStore.offset.x * ratio.ratioW, imageStore.offset.y * ratio.ratioH)
+    ctx.translate(imagesStore.offset.x * ratio.ratioW, imagesStore.offset.y * ratio.ratioH)
 
     shiftCanvas.value = {
       x: Math.max(0, (canvas.value.width - base_image.value.naturalWidth * zoomX) / 2) / zoomX,
@@ -106,14 +106,38 @@ function drawImage() {
     ctx.drawImage(base_image.value, 0, 0, base_image.value.naturalWidth, base_image.value.naturalHeight,
       shiftCanvas.value.x, shiftCanvas.value.y, base_image.value.naturalWidth, base_image.value.naturalHeight)
 
-    landmarksStore.landmarks.forEach((landmark, id) => {
-      let pose = landmark.getPose()
-      let radius = DOT_RADIUS / imageStore.zoom
-      if (!pose && !landmark.equals(landmarkDragged.value)) {
+    // Stroke the lines
+    landmarksStore.distances.forEach((distance) => {
+      if (distance.landmarks.length == 0 || !distance.show) {
+        return;
+      }
+      ctx.beginPath()
+      let landmark = distance.landmarks[0]
+      let marker = (landmark.equals(landmarkDragged.value)) ? draggedPos.value : landmark.pose.marker
+      let shiftedMarker = {
+        x: marker.x * ratio.ratioW + shiftCanvas.value.x,
+        y: marker.y * ratio.ratioH + shiftCanvas.value.y
+      }
+      ctx.moveTo(shiftedMarker.x, shiftedMarker.y)
+      for (let i = 1; i < distance.landmarks.length; i++) {
+        landmark = distance.landmarks[i]
+        marker = (landmark.equals(landmarkDragged.value)) ? draggedPos.value : landmark.pose.marker
+        shiftedMarker = {
+          x: marker.x * ratio.ratioW + shiftCanvas.value.x,
+          y: marker.y * ratio.ratioH + shiftCanvas.value.y
+        }
+        ctx.lineTo(shiftedMarker.x, shiftedMarker.y)
+      }
+      ctx.strokeStyle = distance.getColorHEX();
+      ctx.lineWidth = radius / 4;
+      ctx.stroke()
+      ctx.closePath()
+    })
+
+    landmarksStore.landmarks.forEach((landmark) => {
+      if (!landmark.show) {
         return
       }
-
-      ctx.beginPath();
       if (landmark.equals(landmarkDragged.value)) {
         let marker = draggedPos.value
         // update pos marker depending on image
@@ -121,83 +145,119 @@ function drawImage() {
           x: marker.x * ratio.ratioW,
           y: marker.y * ratio.ratioH
         }
-        const targetRadius = radius * 4 * ratio.ratioW
-        // draw circle
-        ctx.arc((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y), targetRadius, 0, 2 * Math.PI);
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = DOT_RADIUS / 2 / zoomX;
-        ctx.stroke()
-        ctx.closePath();
 
-        // draw white lines diagonals
-        ctx.beginPath();
-        let start: Coordinates = posCircle(marker, 45, targetRadius, shiftCanvas.value);
-        let end: Coordinates = posCircle(marker, 45, targetRadius * SPACE_TARGET, shiftCanvas.value);
-        ctx.moveTo(start.x, start.y)
-        ctx.lineTo(end.x, end.y)
-
-        start = posCircle(marker, 135, targetRadius, shiftCanvas.value);
-        end = posCircle(marker, 135, targetRadius * SPACE_TARGET, shiftCanvas.value);
-        ctx.moveTo(start.x, start.y)
-        ctx.lineTo(end.x, end.y)
-
-        start = posCircle(marker, 225, targetRadius, shiftCanvas.value);
-        end = posCircle(marker, 225, targetRadius * SPACE_TARGET, shiftCanvas.value);
-        ctx.moveTo(start.x, start.y)
-        ctx.lineTo(end.x, end.y)
-
-        start = posCircle(marker, 315, targetRadius, shiftCanvas.value);
-        end = posCircle(marker, 315, targetRadius * SPACE_TARGET, shiftCanvas.value);
-        ctx.moveTo(start.x, start.y)
-        ctx.lineTo(end.x, end.y)
-
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = DOT_RADIUS / 3 / zoomX;
-
-        ctx.stroke()
-        ctx.closePath();
-
-        // draw black lines lines horizontal and vertical
-        ctx.beginPath();
-
-        //horizontal
-        ctx.moveTo((marker.x + shiftCanvas.value.x) + (targetRadius * (1 - SPACE_TARGET)), (marker.y + shiftCanvas.value.y))
-        ctx.lineTo((marker.x + shiftCanvas.value.x) + (targetRadius * SPACE_TARGET), (marker.y + shiftCanvas.value.y))
-
-        ctx.moveTo((marker.x + shiftCanvas.value.x) - (targetRadius * (1 - SPACE_TARGET)), (marker.y + shiftCanvas.value.y))
-        ctx.lineTo((marker.x + shiftCanvas.value.x) - (targetRadius * SPACE_TARGET), (marker.y + shiftCanvas.value.y))
-
-        //vertical
-        ctx.moveTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) + (targetRadius * (1 - SPACE_TARGET)))
-        ctx.lineTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) + (targetRadius * SPACE_TARGET))
-
-        ctx.moveTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) - (targetRadius * (1 - SPACE_TARGET)))
-        ctx.lineTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) - (targetRadius * SPACE_TARGET))
-
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = DOT_RADIUS / 3 / zoomX;
-        ctx.stroke()
+        drawTarget(ctx, marker, radius)
       }
       else {
-        // Marker is defined and landmarkDragged not equals landmark
-        if(pose!.image != imageStore.index){
-          // marker not posed on this image
-          return;
-        }
-        let marker = {
-          x: pose!.marker.x * ratio.ratioW,
-          y: pose!.marker.y * ratio.ratioH
-        }
-        ctx.arc((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y), radius * ratio.ratioW, 0, 2 * Math.PI);
-        ctx.fillStyle = landmark.getColorHEX()
-        ctx.fill();
-        ctx.lineWidth = DOT_RADIUS / 2 / zoomX;
-        ctx.strokeStyle = "black";
-        ctx.stroke();
+        drawMarker(ctx, landmark, radius)
       }
-      ctx.closePath()
+
+    })
+
+
+    // Stroke the points
+    landmarksStore.distances.forEach((distance) => {
+      if (!distance.show) {
+        return;
+      }
+
+      // Stroke the markers
+      distance.landmarks.forEach((landmark, id) => {
+        if (landmark.equals(landmarkDragged.value)) {
+
+          let marker = draggedPos.value
+          // update pos marker depending on image
+          marker = {
+            x: marker.x * ratio.ratioW,
+            y: marker.y * ratio.ratioH
+          }
+
+          drawTarget(ctx, marker, radius)
+        }
+        else {
+          // Marker is defined and landmarkDragged not equals landmark
+          drawMarker(ctx, landmark, radius)
+        }
+      });
     });
   }
+}
+
+function drawTarget(ctx: CanvasRenderingContext2D, marker: Coordinates, radius: number) {
+  const targetRadius = radius * 4
+  ctx.beginPath();
+  // draw circle
+  ctx.arc((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y), targetRadius, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = radius / 2;
+  ctx.stroke()
+  ctx.closePath();
+
+  // draw white lines diagonals
+  ctx.beginPath();
+  let start: Coordinates = posCircle(marker, 45, targetRadius, shiftCanvas.value);
+  let end: Coordinates = posCircle(marker, 45, targetRadius * SPACE_TARGET, shiftCanvas.value);
+  ctx.moveTo(start.x, start.y)
+  ctx.lineTo(end.x, end.y)
+
+  start = posCircle(marker, 135, targetRadius, shiftCanvas.value);
+  end = posCircle(marker, 135, targetRadius * SPACE_TARGET, shiftCanvas.value);
+  ctx.moveTo(start.x, start.y)
+  ctx.lineTo(end.x, end.y)
+
+  start = posCircle(marker, 225, targetRadius, shiftCanvas.value);
+  end = posCircle(marker, 225, targetRadius * SPACE_TARGET, shiftCanvas.value);
+  ctx.moveTo(start.x, start.y)
+  ctx.lineTo(end.x, end.y)
+
+  start = posCircle(marker, 315, targetRadius, shiftCanvas.value);
+  end = posCircle(marker, 315, targetRadius * SPACE_TARGET, shiftCanvas.value);
+  ctx.moveTo(start.x, start.y)
+  ctx.lineTo(end.x, end.y)
+
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = radius / 3;
+
+  ctx.stroke()
+  ctx.closePath();
+
+  // draw black lines lines horizontal and vertical
+  ctx.beginPath();
+
+  //horizontal
+  ctx.moveTo((marker.x + shiftCanvas.value.x) + (targetRadius * (1 - SPACE_TARGET)), (marker.y + shiftCanvas.value.y))
+  ctx.lineTo((marker.x + shiftCanvas.value.x) + (targetRadius * SPACE_TARGET), (marker.y + shiftCanvas.value.y))
+
+  ctx.moveTo((marker.x + shiftCanvas.value.x) - (targetRadius * (1 - SPACE_TARGET)), (marker.y + shiftCanvas.value.y))
+  ctx.lineTo((marker.x + shiftCanvas.value.x) - (targetRadius * SPACE_TARGET), (marker.y + shiftCanvas.value.y))
+
+  //vertical
+  ctx.moveTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) + (targetRadius * (1 - SPACE_TARGET)))
+  ctx.lineTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) + (targetRadius * SPACE_TARGET))
+
+  ctx.moveTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) - (targetRadius * (1 - SPACE_TARGET)))
+  ctx.lineTo((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y) - (targetRadius * SPACE_TARGET))
+
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = radius / 3;
+  ctx.stroke()
+  ctx.closePath()
+}
+
+function drawMarker(ctx: CanvasRenderingContext2D, landmark: Landmark, radius: number) {
+  let ratio = getRatio()
+  let marker = {
+    x: landmark.getPose().marker.x * ratio.ratioW,
+    y: landmark.getPose().marker.y * ratio.ratioH
+  }
+  ctx.beginPath()
+  ctx.arc((marker.x + shiftCanvas.value.x), (marker.y + shiftCanvas.value.y), radius, 0, 2 * Math.PI);
+  ctx.fillStyle = landmark.getColorHEX()
+  ctx.fill();
+  ctx.lineWidth = radius / 2;
+  ctx.strokeStyle = (landmark.getPose().image == imagesStore.index || imagesStore.image != "stack") ? "black" : "white";
+  ctx.stroke();
+  ctx.closePath()
 }
 
 function posCircle(center: Coordinates, angle: number, radius: number, translate: Coordinates = { x: 0, y: 0 }): Coordinates {
@@ -222,15 +282,15 @@ function screenFit() {
     canvas.value.width = Math.floor(imageContainer.value.clientWidth)
     canvas.value.height = Math.floor(imageContainer.value.clientHeight)
 
-    imageStore.zoom = Math.min(imageContainer.value.clientWidth / imageStore.size.width, imageContainer.value.clientHeight / imageStore.size.height)
+    imagesStore.zoom = Math.min(imageContainer.value.clientWidth / imagesStore.size.width, imageContainer.value.clientHeight / imagesStore.size.height)
   }
 }
 
 function getRatio(): Ratio {
   if (base_image.value && base_image.value.complete) {
     return {
-      ratioW: base_image.value.naturalWidth / imageStore.size.width,
-      ratioH: base_image.value.naturalHeight / imageStore.size.height
+      ratioW: base_image.value.naturalWidth / imagesStore.size.width,
+      ratioH: base_image.value.naturalHeight / imagesStore.size.height
     }
   }
   return {
@@ -241,36 +301,35 @@ function getRatio(): Ratio {
 
 function getPos(event: MouseEvent): Coordinates {
   const svgRect = canvas.value!.getBoundingClientRect();
-  let x = ((event.pageX - svgRect.left) / imageStore.zoom) - imageStore.offset.x - shiftCanvas.value.x
-  let y = ((event.pageY - svgRect.top) / imageStore.zoom) - imageStore.offset.y - shiftCanvas.value.y
-
+  let x = ((event.pageX - svgRect.left) / imagesStore.zoom) - imagesStore.offset.x - shiftCanvas.value.x
+  let y = ((event.pageY - svgRect.top) / imagesStore.zoom) - imagesStore.offset.y - shiftCanvas.value.y
   return { x: x, y: y }
 }
 
 function updateOffset(movementX: number, movementY: number) {
   if (canvas.value) {
-    imageStore.offset.x = imageStore.offset.x + movementX / imageStore.zoom
-    imageStore.offset.y = imageStore.offset.y + movementY / imageStore.zoom
+    imagesStore.offset.x = imagesStore.offset.x + movementX / imagesStore.zoom
+    imagesStore.offset.y = imagesStore.offset.y + movementY / imagesStore.zoom
 
     //check value
-    imageStore.offset.x = Math.min(0, Math.max(-((imageStore.size.width * imageStore.zoom) - canvas.value.width) / imageStore.zoom, imageStore.offset.x))
-    imageStore.offset.y = Math.min(0, Math.max(-((imageStore.size.height * imageStore.zoom) - canvas.value.height) / imageStore.zoom, imageStore.offset.y))
+    imagesStore.offset.x = Math.min(0, Math.max(-((imagesStore.size.width * imagesStore.zoom) - canvas.value.width) / imagesStore.zoom, imagesStore.offset.x))
+    imagesStore.offset.y = Math.min(0, Math.max(-((imagesStore.size.height * imagesStore.zoom) - canvas.value.height) / imagesStore.zoom, imagesStore.offset.y))
   }
 }
 
 function updateZoom(zoomDelta: number) {
 
-  imageStore.zoom = +(imageStore.zoom * (1 + zoomDelta / 20)).toFixed(2)
+  imagesStore.zoom = +(imagesStore.zoom * (1 + zoomDelta / 20)).toFixed(2)
 
   //check value
-  imageStore.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, imageStore.zoom))
+  imagesStore.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, imagesStore.zoom))
 }
 
 
 function zoomWithWheel(event: WheelEvent) {
-  let oldZoom = imageStore.zoom
+  let oldZoom = imagesStore.zoom
   updateZoom(Math.sign(-event.deltaY))
-  let deltaZoom = imageStore.zoom / oldZoom
+  let deltaZoom = imagesStore.zoom / oldZoom
 
   //get pos mouse in canvas
   const svgRect = canvas.value!.getBoundingClientRect();
@@ -286,19 +345,50 @@ function zoomWithWheel(event: WheelEvent) {
 }
 
 function startDrag(event: MouseEvent) {
+  console.log("StartDrag : " + event.button)
+  let pos = getPos(event)
+  if(imagesStore.image != "stack"){
+    dragging.value = true
+    return;
+  }
   if (event.button == 0) {
     dragging.value = true
-    let pos = getPos(event)
-    landmarksStore.landmarks.forEach((landmark, index) => {
-      let pose = landmark.getPose()
-      if (!pose) {
-        //if undefined
-        return
+    
+    let landmark = checkPointCircle(pos)
+    landmarkDragged.value = landmark
+    draggedPos.value = landmark?.pose.marker ?? { x: -1, y: -1 }
+  }
+  else if (event.button == 2) {
+    console.log("Pos click " + getPos(event).x + ", " + getPos(event).y)
+    if (!onImage(getPos(event))) {
+      // Image not clicked
+      return;
+    }
+    console.log("Help")
+    let landmark = checkPointCircle(pos)
+    if(landmark){
+      deleteLandmark(landmark)
+    }
+    else{
+      switch(landmarksStore.tab){
+        case "landmarks":
+          generateLandmark(getPos(event))
+          break;
+        case "distances":
+          if(landmarksStore.selectedDistance){
+            addLandmark(getPos(event), landmarksStore.selectedDistance)
+          }else{
+            addDistance(getPos(event))
+            landmarksStore.selectedDistanceIndex = landmarksStore.distances.length-1
+            console.log("new Distance selected : " + landmarksStore.selectedDistanceIndex)
+          }
+          break;
       }
-      if (pose.image == imageStore.index && pointInsideCircle(pos, pose.marker, DOT_RADIUS / imageStore.zoom)) {
-        landmarkDragged.value = landmark
-      }
-    })
+    }
+    //triangulate landmark
+    update()
+    // reinit landmarkDrag
+    //reinitDraggedLandmark()
   }
 }
 
@@ -318,23 +408,18 @@ function mousemove(event: MouseEvent) {
 }
 
 function stopDrag(event: MouseEvent) {
-  if (!contextMenuOpen.value) {
     dragging.value = false
     if (landmarkDragged.value != null) {
       //update pos of landmark
-      landmarkDragged.value.setPose(imageStore.index, getPos(event))
+      console.log("Posing : " + landmarkDragged.value.label)
+      printPos(event)
+      console.log(shiftCanvas.value)
+      landmarkDragged.value.setPose(imagesStore.index, getPos(event))
 
       // reinit landmarkDrag
       reinitDraggedLandmark()
     }
     update()
-  }
-}
-
-function closeContextMenu() {
-  console.log("close context menu")
-  contextMenuOpen.value = false
-  reinitDraggedLandmark()
 }
 
 function reinitDraggedLandmark() {
@@ -347,6 +432,37 @@ function printPos(event: MouseEvent) {
   console.log("Position = ", pos.x, " : ", pos.y)
 }
 
+function checkPointCircle(pos: Coordinates) : Landmark | null {
+  let landmarkClicked : Landmark | null = null
+  landmarksStore.landmarks.forEach((landmark) => {
+    if (!landmark.show) {
+      return;
+    }
+    landmarkClicked = checkDragLandmark(pos, landmark) || landmarkClicked
+  })
+  landmarksStore.distances.forEach((distance) => {
+    if (!distance.show) {
+      return;
+    }
+    distance.landmarks.forEach((landmark) => {
+      landmarkClicked = checkDragLandmark(pos, landmark) || landmarkClicked
+    })
+  })
+  return landmarkClicked
+}
+
+function checkDragLandmark(pos: Coordinates, landmark: Landmark) : Landmark | null {
+  let pose = landmark.getPose()
+  if (!pose) {
+    //if undefined
+    return null;
+  }
+  if (pointInsideCircle(pos, pose.marker, DOT_RADIUS / imagesStore.zoom)) {
+    return landmark
+  }
+  return null;
+}
+
 function pointInsideCircle(pointCoord: Coordinates, circleCoord: Coordinates, radius: number) {
   const distance =
     Math.sqrt((pointCoord.x - circleCoord.x) ** 2 + (pointCoord.y - circleCoord.y) ** 2);
@@ -354,110 +470,60 @@ function pointInsideCircle(pointCoord: Coordinates, circleCoord: Coordinates, ra
 }
 
 function onImage(pos: Coordinates): boolean {
+  let ratio = getRatio()
   if (base_image.value) {
-    return pos.x >= 0 && pos.y >= 0 && pos.x <= base_image.value.naturalWidth && pos.y <= base_image.value.naturalHeight
+    return pos.x >= 0 && pos.y >= 0 && pos.x <= base_image.value.naturalWidth / ratio.ratioW && pos.y <= base_image.value.naturalHeight / ratio.ratioH
   }
   return false
 }
 
-function openContextMenu(event: MouseEvent) {
-  console.log("Start context")
-  contextMenuOpen.value = true
-  posContextMenu.value = getPos(event)
-  if (!onImage(posContextMenu.value)) {
-    // Don't show context menu if image not clicked
-    event.preventDefault()
-    return;
-  }
-  let pos = getPos(event)
-  landmarksStore.landmarks.forEach((landmark, index) => {
-    let pose = landmark.getPose()
-    if (!pose) {
-      //if undefined
-      return
-    }
-    if (pointInsideCircle(pos, pose.marker, DOT_RADIUS / imageStore.zoom)) {
-      landmarkDragged.value = landmark
-    }
-  })
 
+function addDistance(pos : Coordinates) {
+  let distance = new Distance("Distance " + (landmarksStore.distances.length + 1))
+  landmarksStore.distances.push(distance)
+  distance.landmarks.push(createLandmark(pos, distance.color));
 }
 
-function clickContext(landmark: Landmark) {
-  landmark.setPose(imageStore.index, { x: posContextMenu.value.x, y: posContextMenu.value.y })
-  //triangulate landmark
+function createLandmark(pos: Coordinates, color: Color | undefined = undefined) {
+  let id = landmarksStore.generateID()
+  let pose: Pose = {
+    marker: { x: pos.x, y: pos.y },
+    image: imagesStore.index
+  }
+  return new Landmark(id, id, pose, color)
+}
+
+function addLandmark(pos: Coordinates, distance: Distance) {
+  distance.landmarks.push(createLandmark(pos, distance.color))
+}
+
+function generateLandmark(pos: Coordinates) {
+  landmarksStore.landmarks.push(createLandmark(pos))
+}
+
+function deleteLandmark(landmark: Landmark) {
+  landmarksStore.distances.forEach((dist, index) => {
+    dist.landmarks = dist.landmarks.filter(x => !x.equals(landmark))
+  })
+
+  landmarksStore.landmarks = landmarksStore.landmarks.filter(land => !land.equals(landmark))
   update()
   // reinit landmarkDrag
   reinitDraggedLandmark()
 }
-
-function addLandmark() {
-  let id = landmarksStore.generateID()
-  let landmark = new Landmark(id, id)
-  landmarksStore.addLandmark(landmark);
-  landmark.setPose(imageStore.index, { x: posContextMenu.value.x, y: posContextMenu.value.y })
-  update()
-}
-
-function deleteLandmark(landmark: Landmark) {
-  landmark.removePose()
-  update()
-}
-
-
-
-
-
 </script>
 
 <template>
   <div ref="imageContainer"
     :class="cn('relative border w-full h-full flex justify-center items-center overflow-auto', props.class)"
     @wheel.prevent>
-    <ContextMenu>
-      <ContextMenuTrigger class="flex w-full h-full">
-        <canvas ref="canvas" tabindex='1'
-          :class="{ 'cursor-none': landmarkDragged, 'cursor-pointer': !landmarkDragged }" @mousedown="startDrag"
-          @mouseup="stopDrag" @mousemove="mousemove" @mouseout="stopDrag" @wheel="zoomWithWheel"
-          @contextmenu="openContextMenu">
-        </canvas>
-      </ContextMenuTrigger>
-      <ContextMenuContent class="w-64" @closeAutoFocus="closeContextMenu">
-        <ContextMenuLabel>
-          Place landmark
-        </ContextMenuLabel>
-        <ContextMenuSeparator />
-        <ContextMenuItem v-for="landmark in landmarksStore.landmarks" class="block" inset
-          @select="clickContext(landmark as Landmark)">
-          <div class="flex space-x-2 items-center">
-            <svg class="h-4 w-4" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1" :fill="landmark.getColorHEX()"
-              xmlns="http://www.w3.org/2000/svg">
-              <circle cx="4" cy="4" r="3" />
-            </svg>
-            <div class="flex item-centers">{{ landmark.getLabel() }}</div>
-          </div>
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem class="block" inset @select="addLandmark">
-          Add Landmark
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem v-if="landmarkDragged != null" @select="deleteLandmark(landmarkDragged)">
-          <div class="flex space-x-4 items-center">
-            <span class="inline-block align-middle font-bold">Delete :</span>
-            <div class="flex space-x-2 inline-block items-center">
-              <svg class="h-4 w-4" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1"
-                :fill="landmarkDragged.getColorHEX()" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="4" cy="4" r="3" />
-              </svg>
-              <span class="inline-flex items-center align-middle">{{ landmarkDragged.getLabel() }}</span>
-            </div>
-          </div>
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
-    <img ref="base_image" class="hidden" :src="imageStore.selectedImage.image"
-      :alt="'Thumbnail of ' + imageStore.selectedImage.name" aspect-ratio="auto" @load="loaded">
+
+    <canvas ref="canvas" tabindex='1' :class="{ 'cursor-none': landmarkDragged, 'cursor-pointer': !landmarkDragged }"
+      @mousedown="startDrag" @mouseup="stopDrag" @mousemove="mousemove" @mouseout="stopDrag" @wheel="zoomWithWheel"
+      @contextmenu.prevent>
+    </canvas>
+    <img ref="base_image" class="hidden" :src="imagesStore.selectedImage!.image"
+      :alt="'Thumbnail of ' + imagesStore.selectedImage!.name" aspect-ratio="auto" @load="loaded">
   </div>
 
 </template>

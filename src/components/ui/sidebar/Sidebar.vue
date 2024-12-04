@@ -1,84 +1,64 @@
 <script setup lang="ts">
 import { LandmarkList } from "@/components/ui/landmark";
-import { DistanceList } from "@/components/ui/distance";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DistanceComputed, DistanceList } from "@/components/ui/distance";
 import { Slider } from "@/components/ui/slider";
-
-import {
-  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
-} from '@/components/ui/context-menu'
-
-import { useLandmarksStore, useImagesStore } from "@/lib/stores";
-import { Landmark } from "@/data/models/landmark";
-import { Scale } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useImagesStore, useLandmarksStore } from "@/lib/stores";
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const imageStore = useImagesStore()
 const landmarksStore = useLandmarksStore()
 
-function addDistance() {
-  let id_left = landmarksStore.selectedGroup.deque[0]
-  let id_right = landmarksStore.selectedGroup.deque[1]
-  let left: Landmark = landmarksStore.landmarks.find((x) => x.id == id_left) as Landmark
-  let right: Landmark = landmarksStore.landmarks.find((x) => x.id == id_right) as Landmark
-  landmarksStore.addDistance(left, right)
-}
-
-function resetScale() {
-  landmarksStore.adjustFactor = 1
-}
-
-console.log("Scale " + landmarksStore.scale)
-
+console.log(imageStore.image)
+imageStore.$subscribe((mutation, state) => {
+  console.log(imageStore.image + " => " + imageStore.selectedImage!.name)
+  console.log(state.individualImages)
+  console.log(state.individualImages.has(state.image))
+})
 </script>
 
 <template>
-  <div class="pb-[12px] w-auto">
-    <div class="space-y-4 py-4">
+  <div class="flex flex-col pb-[12px] w-auto h-full">
+    <div class="flex-none space-y-4 py-4">
+      <ToggleGroup type="single" :model-value="imageStore.image" @update:modelValue="$event => imageStore.image = $event.toString()">
+        <ToggleGroupItem value="stack">
+          Stack
+        </ToggleGroupItem>
+        <ToggleGroupItem v-for="stackedImage in imageStore.individualImages.keys()" :value="stackedImage">
+          {{ stackedImage }}
+        </ToggleGroupItem>
+    </ToggleGroup>
+    </div>
+    <div class="flex-none space-y-4 py-4">
       <div class="px-3 py-2">
-        <Slider :model-value="[imageStore.index]" :max="imageStore.images.length-1" :step="1" @update:modelValue="$event => imageStore.setIndex($event![0])" />
-      </div>
-      <div class="px-3 py-2">
-        <h2 class="relative px-7 text-lg font-semibold tracking-tight">
-          Landmarks
-        </h2>
-        <ContextMenu>
-          <ContextMenuTrigger class="flex w-full h-full">
-            <LandmarkList />
-          </ContextMenuTrigger>
-          <ContextMenuContent class="w-64">
-            <ContextMenuItem class="block" inset @select="addDistance">
-              Create Distance
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
-      </div>
-      <div class="px-3 py-2">
-        <div class="flex row">
-          <h2 class="relative px-7 text-lg font-semibold tracking-tight">
-            Distances
-          </h2>
-          <div class="w-full h-full flex justify-end space-x-2">
-            <Select v-model="landmarksStore.scale">
-              <SelectTrigger class="w-16">
-                <SelectValue placeholder="Pick a scale" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Scale</SelectLabel>
-                  <SelectItem v-for="scale in Object.keys(Scale).filter((v) => isNaN(Number(v)))" :value="scale">
-                    {{ scale }}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <Button variant="secondary" @click="resetScale">
-              Reset Scale
-            </Button>
-          </div>
+        <Slider :model-value="[imageStore.index]" :max="imageStore.stackImages.length - 1" :step="1"
+          @update:modelValue="$event => imageStore.setIndex($event![0])" />
+        <div className='mt-1.5 flex flex-row justify-between'>
+          <span class="w-5 text-center" v-for="i in new Array(imageStore.stackImages.length)">
+            |
+          </span>
         </div>
-        <DistanceList />
       </div>
+      <Tabs :model-value="landmarksStore.tab" @update:modelValue="$event => landmarksStore.tab = $event.toString()"
+        default-value="landmarks" class="w-full my-4">
+        <TabsList class="grid w-full grid-cols-2">
+          <TabsTrigger value="landmarks">
+            Landmarks
+          </TabsTrigger>
+          <TabsTrigger value="distances">
+            Distances
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="landmarks">
+          <LandmarkList />
+        </TabsContent>
+        <TabsContent value="distances">
+          <DistanceList />
+        </TabsContent>
+      </Tabs>
+    </div>
+    <div class="flex grow items-end mt-4">
+      <DistanceComputed />
     </div>
   </div>
 </template>

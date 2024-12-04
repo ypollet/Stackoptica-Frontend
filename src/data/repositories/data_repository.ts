@@ -14,6 +14,7 @@ export class DataRepository implements Repository {
         console.log("get Images")
         return this.provider.getImages(objectPath).then((res) => {
             let data = res.data.result as ProjectData
+            data.individualImages = new Map(Object.entries(data.individualImages))
             return data
         })
     }

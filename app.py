@@ -44,60 +44,6 @@ site_data = {
 def welcome(id):
   return render_template('index.html', **site_data)
 
-"""
-
-
-@app.route('/<id>/triangulate', methods=['POST'])
-def triangulate(id):
-  if request.method == 'POST':
-    data = request.get_json()
-    poses = data['poses']
-    directory = f"{DATA_FOLDER}/{id}"
-    with open(f"{directory}/calibration.json", "r") as f:
-      calib_file = json.load(f)
-
-    intrinsics = np.matrix(calib_file["intrinsics"]["camera matrix"]["matrix"])
-    proj_points = []
-    for image in poses:
-      extrinsics = np.matrix(calib_file["extrinsics"][image]["matrix"])
-      proj_mat = reconstruction.projection_matrix(intrinsics, extrinsics)
-      pose = np.matrix([poses[image]['x'], poses[image]['y']])
-      proj_points.append(helpers.ProjPoint(proj_mat, pose))
-    
-    # Triangulation computation with all the undistorted landmarks
-    landmark_pos = reconstruction.triangulate_point(proj_points)      
-  
-    return {"result": {
-          "position": landmark_pos.tolist()
-       }
-    }
-          
-
-@app.route('/<id>/reproject', methods=['POST'])
-def reproject(id):
-  if request.method == 'POST':
-    data = request.get_json()
-    position = np.array(data["position"])
-    print(position.shape)
-    image_name = data['image']
-    
-    directory = f"{DATA_FOLDER}/{id}"
-    with open(f"{directory}/calibration.json", "r") as f:
-      calib_file = json.load(f)
-
-    intrinsics = np.matrix(calib_file["intrinsics"]["camera matrix"]["matrix"])
-    dist_coeffs = np.matrix(calib_file["intrinsics"]["distortion matrix"]["matrix"])
-    extrinsics = np.matrix(calib_file["extrinsics"][image_name]["matrix"])[0:3, 0:4]
-
-    pose = reconstruction.project_points(position, intrinsics, extrinsics, dist_coeffs)
-    
-    print(position)
-    print(image_name)
-    return {"result":{
-          "pose": {"x": pose.item(0), "y": pose.item(1)}
-       }}
-"""
-
 def get_response_image(image_path):
     pil_img = Image.open(image_path, mode='r') # reads the PIL image
     byte_arr = io.BytesIO()
@@ -113,7 +59,6 @@ def get_response_image(image_path):
 @app.route('/<id>/<image_name>')
 @cross_origin()
 def image(id, image_name):
-  print(f"Image for {id}/{image_name}")
   directory = f"{DATA_FOLDER}/{id}"
   image_data = {}
   try:
@@ -139,14 +84,23 @@ def images(id):
   encoded_images = []
   for image_name in stack_file["stack"]:
     try:
-      print(f"Image to send : {image_name}")
       image_data = get_response_image(f"{directory}/{stack_file['thumbnails']}/{image_name}")
       image_data["name"] = image_name
       encoded_images.append(image_data)
     except Exception as error:
        print(error)
        continue
-  to_jsonify["images"] = encoded_images
+  stackedImages = dict()
+  for image_name in stack_file["Stacked_images"]:
+    try:
+      image_data = get_response_image(f"{directory}/{stack_file['thumbnails']}/{stack_file['Stacked_images'][image_name]}")
+      image_data["name"] = stack_file['Stacked_images'][image_name]
+      stackedImages[image_name] = image_data
+    except Exception as error:
+       print(error)
+       continue
+  to_jsonify["stackImages"] = encoded_images
+  to_jsonify["individualImages"] = stackedImages
   to_jsonify["size"] = {
     "width" : stack_file["width"],
     "height" : stack_file["height"]

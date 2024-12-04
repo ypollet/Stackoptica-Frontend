@@ -11,20 +11,18 @@ export type Pose = {
 export class Landmark {
     id: string
     label: string
-    pose: Pose | undefined
+    pose: Pose
     color: Color
+    show: boolean
     edit: boolean
 
-    constructor(id: string, label: string, color: Color | null = null, pose: Pose | undefined = undefined) {
+    constructor(id: string, label: string, pose: Pose, color: Color | null = null) {
         this.id = id
         this.label = label
         this.pose = pose
         this.edit = false
-
-        if (color == null) {
-            color = Color.rgb([Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)])
-        }
-        this.color = color
+        this.color = color || Color.rgb([Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)])
+        this.show = true
     }
 
     equals(other : Landmark | string | null){
@@ -70,10 +68,7 @@ export class Landmark {
             image : image
         }
     }
-    removePose() {
-        this.pose = undefined
-    }
-    getPose() : Pose | undefined{
+    getPose() : Pose {
         return this.pose
     }
     

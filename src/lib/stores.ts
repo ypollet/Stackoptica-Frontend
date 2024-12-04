@@ -23,115 +23,105 @@ export const useSettingsStore = defineStore('settings', {
 })
 
 
-export const useImagesStore = defineStore('image', {
+export const useImagesStore = defineStore('images', {
   state: () => ({
     objectPath: "",
+    image : "stack",
     index : 0,
-    images : Array<StackImage>(),
+    stackImages : new Array<StackImage>(),
+    individualImages : new Map<string, StackImage>(),
     size : { width : -1, height : -1},
     voxel : [1,1,1],
     zoom : -1,
     offset : {x:0, y:0}
   }),
   getters: {
-    selectedImage : (state) => (state.index >= 0 && state.index < state.images.length) ?  state.images[state.index] : {"name":"RBINS Logo","image":"https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg"}
+    selectedImage : (state) => (state.index >= 0 && state.index < state.stackImages.length && state.image == "stack") ?  state.stackImages[state.index] : (!(state.individualImages.has(state.image))) ? {"name":"RBINS Logo","image":"https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg"} : state.individualImages.get(state.image)
   },
   actions: {
     setPath(path : string) {
-      this.reset()
+      this.$reset()
       this.objectPath = path
     },
-    reset() {
-      this.objectPath = ""
-      this.index = 0
-      this.images = Array<StackImage>()
-      this.size = { width : -1, height : -1}
-      this.voxel = [1,1,1]
-      this.zoom = -1
-      this.offset = {x:0, y:0}
-    },
     setIndex(index : number){
-      this.index = math.min(math.max(0, index), this.images.length-1)
+      this.index = math.min(math.max(0, index), this.stackImages.length-1)
     },
     moveIndex(move: number) {
-      this.index = math.min(math.max(0, this.index + move), this.images.length-1)
+      this.index = math.min(math.max(0, this.index + move), this.stackImages.length-1)
     },
     increment(){
       this.moveIndex(1)
     },
     decrement(){
       this.moveIndex(-1)
+    },
+    getImageName(index : number){
+      return (index >= 0 && index < this.stackImages.length) ? this.stackImages[index].name : "Image " + index
     }
 
   },
 
   persist: {
     storage: sessionStorage,
-    key: 'camera',
+    key: 'images',
+    afterHydrate: (ctx: PiniaPluginContext) => {
+      console.log("Restore Images Store")
+      console.log(ctx.store.$state)
+    }
   },
 })
 
 export const useLandmarksStore = defineStore('landmarks', {
-  state: () => ({ landmarks: Array<Landmark>(),
-                  selectedGroup : new DequeMax2(),
-                  distances: Array<Distance>(),
-                  adjustFactor: 1,
-                  scale: "m"
-                }),
+  state: () => ({ 
+    landmarks: Array<Landmark>(),
+    distances: Array<Distance>(),
+    adjustFactor: 1,
+    scale: "mm",
+    tab: "landmarks",
+    selectedDistanceIndex: -1
+  }),
+  getters:{
+    indexes: (state) => new Map(state.distances.map((distance, index) => [distance.label, index])),
+    selectedDistance : (state) => (state.selectedDistanceIndex >= 0 && state.selectedDistanceIndex < state.distances.length) ? state.distances[state.selectedDistanceIndex] :  null
+  },
   actions: {
-    addLandmark(landmark: Landmark) {
-      this.landmarks.push(landmark)
-    },
     generateID() {
       let check: boolean = false
       let id: string = ""
       while (!check) {
         id = (Math.random() + 1).toString(36).substring(2);
-        if (this.landmarks.filter(e => e.getId() === id).length == 0) {
+        this.distances.forEach(distance => {
+          if (distance.landmarks.filter(e => e.equals(id)).length == 0) {
+            check = true
+          }
+        })
+        if (this.landmarks.filter(e => e.equals(id)).length == 0) {
           check = true
         }
       }
       return id;
     },
-    addDistance(left : Landmark, right : Landmark, label:string | null = null){
-      let distance : Distance = new Distance(label || "distance_"+this.distances.length, left, right)
-      if(this.distances.filter((x) => x.equals(distance)).length == 0){
-        this.distances.push(distance)
-      }
-    }
   },
   persist: {
     storage: sessionStorage,
     key: 'landmarks',
-    afterRestore: (ctx: PiniaPluginContext) => {
+    afterHydrate: (ctx: PiniaPluginContext) => {
       // restore landmarks
-      let landmarks = ctx.store.$state.landmarks.map((x: Landmark) => x)
-      let landmarksToKeep = landmarks.map((jsonObject: Landmark) =>
-        new Landmark(jsonObject.id, jsonObject.label, Color(jsonObject.color))
-      )
-      ctx.store.$state.landmarks = landmarksToKeep
-
-      // restore selectedGroup
-      let selectedGroup = new DequeMax2()
-      let deque = ctx.store.$state.selectedGroup
-      if(deque){
-        for(let i = 0; i < Object.values(deque.deque).length; i++){
-          selectedGroup.add(deque.deque[i])
-        }
-        ctx.store.$state.selectedGroup = selectedGroup
-      }
-
-      // restore distances
-      landmarksToKeep.forEach((x : Landmark) => {
-        console.log(x.id)
+      console.log("Restore Landmarks")
+      let landmarks = new Array<Landmark>()
+      ctx.store.$state.landmarks.forEach((jsonObject : Landmark) => {
+        let landmark = new Landmark(jsonObject.id, jsonObject.label, jsonObject.pose, Color(jsonObject.color))
+        landmarks.push(landmark)
       })
-      let distances = ctx.store.$state.distances.map((x : Distance) => x)
+      ctx.store.$state.landmarks = landmarks
 
-      ctx.store.$state.distances = distances.map((jsonObject: Distance) => 
-        new Distance(jsonObject.label, landmarksToKeep[landmarksToKeep.map((e : Landmark) => e.id).indexOf(jsonObject.landmarkLeft.id)], 
-          landmarksToKeep[landmarksToKeep.map((e : Landmark) => e.id).indexOf(jsonObject.landmarkRight.id)])
-      )
-      
+      let distances = new Array<Distance>()
+      ctx.store.$state.distances.forEach((jsonObject : Distance) => {
+        let landmarks = jsonObject.landmarks.map((x : Landmark) => new Landmark(x.id, x.label, x.pose, Color(x.color)))
+        let distance = new Distance(jsonObject.label, landmarks, Color(jsonObject.color))
+        distances.push(distance)
+      })
+      ctx.store.$state.distances = distances
     },
   },
 })
