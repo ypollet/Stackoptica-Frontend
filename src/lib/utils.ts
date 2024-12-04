@@ -15,12 +15,12 @@ export function radToDegrees(rad: number) {
 }
 
 export enum Scale {
-    m = 1,
-    dm = 0.1,
-    cm = 0.01,
-    mm = 0.001,
-    µm = 0.000001,
-    nm = 0.000000001,
+    m = 1000,
+    dm = 100,
+    cm = 10,
+    mm = 1,
+    µm = 0.001,
+    nm = 0.000001,
 }
 
 
