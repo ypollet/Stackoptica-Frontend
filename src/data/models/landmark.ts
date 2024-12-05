@@ -1,5 +1,5 @@
 import Color from "color"
-import type { Coordinates } from "@/data/models/coordinates"
+import type { Coordinates, Position } from "@/data/models/coordinates"
 
 export type Pose = {
     marker: Coordinates
@@ -12,14 +12,16 @@ export class Landmark {
     id: string
     label: string
     pose: Pose
+    position : Position
     color: Color
     show: boolean
     edit: boolean
 
-    constructor(id: string, label: string, pose: Pose, color: Color | null = null) {
+    constructor(id: string, label: string, pose: Pose, position : Position, color: Color | null = null) {
         this.id = id
         this.label = label
         this.pose = pose
+        this.position = position
         this.edit = false
         this.color = color || Color.rgb([Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)])
         this.show = true
@@ -36,7 +38,7 @@ export class Landmark {
     }
 
     toJSON() {
-        return { id: this.id, label: this.label, color: this.color.hex(), pose: this.pose }
+        return { id: this.id, label: this.label, color: this.color.hex(), pose: this.pose, position : this.position }
     }
 
     getId() : string {
@@ -68,9 +70,19 @@ export class Landmark {
             image : image
         }
     }
+    
     getPose() : Pose {
         return this.pose
     }
+
+    setPosition(position : Position) {
+        this.position = position
+    }
+
+    getPosition() : Position {
+        return this.position
+    }
+
     
     getEdit() : boolean{
         return this.edit

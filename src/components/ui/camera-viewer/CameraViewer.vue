@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { useImagesStore } from '@/lib/stores';
 
-import type { ProjectData } from '@/data/models/stack_image'
+import type { ProjectData, StackImage } from '@/data/models/stack_image'
 
 import ImageViewer from '@/components/ui/image-viewer/ImageViewer.vue';
 
@@ -29,10 +29,18 @@ const repository = RepositoryFactory.get(repositorySettings.type)
 function getImages(): Promise<ProjectData> {
   return repository.getImages(imageStore.objectPath).then((data) => {
     console.log("images : length = " + data.stackImages.length)
-    imageStore.stackImages = data.stackImages
+    imageStore.stackImages = data.stackImages.map((image_name) => 
+    {
+      return { 
+        "name" : image_name, 
+        "image" : repository.getThumbnail(imageStore.objectPath, image_name) 
+      }
+    })
     imageStore.size = data.size
-    imageStore.voxel = data.voxel
-    imageStore.individualImages = data.individualImages
+    imageStore.individualImages = new Map()
+    data.individualImages.forEach((value, key) => {
+      imageStore.individualImages.set(key, {"name" : value, "image" : repository.getThumbnail(imageStore.objectPath, value)})
+    } )
     return data
   })
 }

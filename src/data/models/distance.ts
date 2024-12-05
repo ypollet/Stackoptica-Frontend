@@ -26,9 +26,9 @@ export class Distance {
         let distance : [number, number, number][] = new Array()
         for(let i = 1; i < this.landmarks.length; i++){
             distance.push([
-                math.abs(this.landmarks[i].pose.marker.x - this.landmarks[i-1].pose.marker.x),
-                math.abs(this.landmarks[i].pose.marker.y - this.landmarks[i-1].pose.marker.y),
-                math.abs(this.landmarks[i].pose.image - this.landmarks[i-1].pose.image)
+                math.abs(this.landmarks[i].position.x - this.landmarks[i-1].position.x),
+                math.abs(this.landmarks[i].position.y - this.landmarks[i-1].position.y),
+                math.abs(this.landmarks[i].position.z - this.landmarks[i-1].position.z)
             ])
         }
         return distance

@@ -1,8 +1,9 @@
-import type { Matrix } from "mathjs";
 import type { AxiosResponse } from "axios";
-import type { Coordinates } from "../models/coordinates";
+import type { Pose } from "../models/landmark";
 
 export interface DataProvider {
         getImages: (objectPath: string) => Promise<AxiosResponse>;
-        getImage : (objectPath:string, image_name : string) => Promise<AxiosResponse>;
+        getFullImage : (objectPath:string, imageName : string) => string;
+        getThumbnail : (objectPath:string, imageName : string) => string;
+        computeLandmarkPosition : (objectPath:string, pose : Pose) => Promise<AxiosResponse>;
 }

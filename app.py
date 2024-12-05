@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, send_from_directory, abort
+from flask import Flask, render_template, jsonify, request, send_from_directory, send_file, abort
 
 from flask_cors import CORS, cross_origin
 
@@ -44,34 +44,19 @@ site_data = {
 def welcome(id):
   return render_template('index.html', **site_data)
 
-def get_response_image(image_path):
-    pil_img = Image.open(image_path, mode='r') # reads the PIL image
-    byte_arr = io.BytesIO()
-    pil_img.save(byte_arr, format=pil_img.format) # convert the PIL image to byte array
-    encoded_img = encodebytes(byte_arr.getvalue()).decode('ascii') # encode as base64
-    
-    return {"image": f"data:image/{pil_img.format.lower()};base64, {encoded_img}",
-            "format": pil_img.format.lower(),
-            "height": pil_img.height,
-            "width": pil_img.width
-          }
-# send single image
-@app.route('/<id>/<image_name>')
+# send full image
+@app.route('/<id>/<image_id>/full-image')
 @cross_origin()
-def image(id, image_name):
-  directory = f"{DATA_FOLDER}/{id}"
-  image_data = {}
-  try:
-    image_data = get_response_image(f"{directory}/{image_name}")
-    image_data["name"] = image_name
-               
-  except Exception as error:
-    print(error)
-    
-#  return send_from_directory(DATA_FOLDER, f"{path}/{image_name}")
-  return image_data
+def image(id,image_id):
+  return send_from_directory(f"{DATA_FOLDER}/{id}", image_id)
 
-# send images
+# send thumbnail
+@app.route('/<id>/<image_id>/thumbnail')
+@cross_origin()
+def thumbnail(id,image_id):
+  return send_from_directory(f"{DATA_FOLDER}/{id}/thumbnails", image_id)
+
+# send StackData
 @app.route('/<id>/images')
 @cross_origin()
 def images(id):
@@ -82,32 +67,53 @@ def images(id):
     stack_file = json.load(f)
   to_jsonify = {}
   encoded_images = []
-  for image_name in stack_file["stack"]:
+  for image in stack_file["stack"]:
     try:
-      image_data = get_response_image(f"{directory}/{stack_file['thumbnails']}/{image_name}")
-      image_data["name"] = image_name
-      encoded_images.append(image_data)
+      encoded_images.append(image["name"])
     except Exception as error:
        print(error)
        continue
   stackedImages = dict()
-  for image_name in stack_file["Stacked_images"]:
+  for image in stack_file["Stacked_images"]:
     try:
-      image_data = get_response_image(f"{directory}/{stack_file['thumbnails']}/{stack_file['Stacked_images'][image_name]}")
-      image_data["name"] = stack_file['Stacked_images'][image_name]
-      stackedImages[image_name] = image_data
+      # file name of stacked image
+      stackedImages[image] = stack_file['Stacked_images'][image]
     except Exception as error:
        print(error)
        continue
+  print(stackedImages)
   to_jsonify["stackImages"] = encoded_images
   to_jsonify["individualImages"] = stackedImages
   to_jsonify["size"] = {
     "width" : stack_file["width"],
     "height" : stack_file["height"]
   }
-  to_jsonify["voxel"] = stack_file["voxel"]
   
-  return jsonify({'result': to_jsonify})
+  return jsonify(to_jsonify)
+
+@app.route('/<id>/position')
+@cross_origin()
+def compute_landmark(id):
+  x = float(request.args.get("x"))
+  y = float(request.args.get("y"))
+  image_index = int(request.args.get("imageIndex"))
+  
+  directory = f"{DATA_FOLDER}/{id}"
+  if not os.path.exists(directory):
+    abort(404)
+  with open(f"{directory}/stack.json", "r") as f:
+    stack_file = json.load(f)
+    
+  image_data = stack_file["stack"][image_index]
+  
+  position = {
+    "x" : x*image_data["PixelRatio"][0] + image_data["SlicePosition"][0],
+    "y" : y*image_data["PixelRatio"][1] + image_data["SlicePosition"][1],
+    "z" : image_data["SlicePosition"][2]
+  }
+  
+  return jsonify(position)
+  
 
 if __name__ == '__main__':
     app.run()

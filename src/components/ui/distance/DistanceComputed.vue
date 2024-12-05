@@ -22,8 +22,7 @@ const imagesStore = useImagesStore()
 function computeDistance(intervals: [number, number, number][]): number {
     let dist = 0
     intervals.forEach((interval) => {
-        let intervalDist = math.dotMultiply(imagesStore.voxel, interval)
-        let squared = math.map(intervalDist, math.square)
+        let squared = math.map(interval, math.square)
         let sum = math.sum(squared)
         // can't be a Complex number
         dist += math.sqrt(sum) as number

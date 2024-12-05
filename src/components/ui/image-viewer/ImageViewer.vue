@@ -65,15 +65,13 @@ function loaded() {
       let image_name = imagesStore.selectedImage!.name
       setTimeout(() => {
         if (image_name == imagesStore.selectedImage!.name) {
-          repository.getImage(imagesStore.objectPath, imagesStore.selectedImage!.name).then((image) => {
-            nextTick(() => {
-              // Just verifies we draw the right image
-              if (base_image.value!.alt.endsWith(image.name)) {
-                base_image.value!.src = image.image
-                base_image.value!.alt = image.name
-                update()
-              }
-            })
+          nextTick(() => {
+            // Just verifies we draw the right image
+            if (base_image.value!.alt.endsWith(image_name)) {
+              base_image.value!.src = repository.getFullImage(imagesStore.objectPath, image_name)
+              base_image.value!.alt = image_name
+              update()
+            }
           })
         }
       }, 500);
@@ -414,7 +412,11 @@ function stopDrag(event: MouseEvent) {
       console.log("Posing : " + landmarkDragged.value.label)
       printPos(event)
       console.log(shiftCanvas.value)
-      landmarkDragged.value.setPose(imagesStore.index, getPos(event))
+      let landmark = landmarkDragged.value
+      landmark.setPose(imagesStore.index, getPos(event))
+      repository.computeLandmarkPosition(imagesStore.objectPath, landmark.pose).then((position) => {
+        landmark.setPosition(position)
+      })
 
       // reinit landmarkDrag
       reinitDraggedLandmark()
@@ -478,27 +480,28 @@ function onImage(pos: Coordinates): boolean {
 }
 
 
-function addDistance(pos : Coordinates) {
+async function addDistance(pos : Coordinates) {
   let distance = new Distance("Distance " + (landmarksStore.distances.length + 1))
   landmarksStore.distances.push(distance)
-  distance.landmarks.push(createLandmark(pos, distance.color));
+  distance.landmarks.push(await createLandmark(pos, distance.color));
 }
 
-function createLandmark(pos: Coordinates, color: Color | undefined = undefined) {
+async function createLandmark(pos: Coordinates, color: Color | undefined = undefined) : Promise<Landmark> {
   let id = landmarksStore.generateID()
   let pose: Pose = {
     marker: { x: pos.x, y: pos.y },
     image: imagesStore.index
   }
-  return new Landmark(id, id, pose, color)
+  let position = await repository.computeLandmarkPosition(imagesStore.objectPath, pose)
+  return new Landmark(id, id, pose, position, color)
 }
 
-function addLandmark(pos: Coordinates, distance: Distance) {
-  distance.landmarks.push(createLandmark(pos, distance.color))
+async function addLandmark(pos: Coordinates, distance: Distance) {
+  distance.landmarks.push(await createLandmark(pos, distance.color))
 }
 
-function generateLandmark(pos: Coordinates) {
-  landmarksStore.landmarks.push(createLandmark(pos))
+async function generateLandmark(pos: Coordinates) {
+  landmarksStore.landmarks.push(await createLandmark(pos))
 }
 
 function deleteLandmark(landmark: Landmark) {

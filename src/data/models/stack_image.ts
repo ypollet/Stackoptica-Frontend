@@ -1,9 +1,6 @@
 export type StackImage = {
     name: string,
     image: string,
-    format: string,
-    height: number,
-    width: number
 }
 
 export type Size = {
@@ -12,8 +9,8 @@ export type Size = {
 }
 
 export type ProjectData = {
-    stackImages: Array<StackImage>,
-    individualImages: Map<string, StackImage>,
+    stackImages: Array<string>,
+    individualImages: Map<string, string>,
     size: Size,
     voxel: [number, number, number]
 }
