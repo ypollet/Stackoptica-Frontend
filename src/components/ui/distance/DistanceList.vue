@@ -13,10 +13,6 @@ const { selectedDistanceIndex } = storeToRefs(landmarksStore)
 function updateSelectedDist(payload : string){
     landmarksStore.selectedDistanceIndex = Number(payload)
 }
-
-landmarksStore.$subscribe((mutation, state) => {
-    console.log("Check selected Index : " + selectedDistanceIndex.value)
-})
 </script>
 
 <template>

@@ -9,12 +9,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 const imageStore = useImagesStore()
 const landmarksStore = useLandmarksStore()
 
-console.log(imageStore.image)
-imageStore.$subscribe((mutation, state) => {
-  console.log(imageStore.image + " => " + imageStore.selectedImage!.name)
-  console.log(state.individualImages)
-  console.log(state.individualImages.has(state.image))
-})
 </script>
 
 <template>

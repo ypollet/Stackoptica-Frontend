@@ -18,7 +18,6 @@ export class DataRepository implements Repository {
     }
 
     async getImages(objectPath: string): Promise<ProjectData> {
-        console.log("get Images")
         return this.provider.getImages(objectPath).then((res) => {
             let data = res.data as ProjectData
             data.individualImages = new Map(Object.entries(data.individualImages))

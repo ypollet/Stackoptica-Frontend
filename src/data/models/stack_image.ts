@@ -12,7 +12,6 @@ export type ProjectData = {
     stackImages: Array<string>,
     individualImages: Map<string, string>,
     size: Size,
-    voxel: [number, number, number]
 }
 
 export type Ratio = {

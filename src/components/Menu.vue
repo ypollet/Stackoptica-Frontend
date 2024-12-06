@@ -60,9 +60,9 @@ function downloadCsv() {
   landmarksStore.distances.forEach((distance) => {
     distance.landmarks.forEach((landmark) => {
     landmark = landmark as Landmark
-    let pose = landmark.pose!
-    let position = math.dotMultiply(imagesStore.voxel, [pose.marker.x, pose.marker.y, pose.image])
-    let row: Array<string> = [distance.label, landmark.label, landmark.getColorHEX(), pose.marker.x.toString(), pose.marker.y.toString(), imagesStore.stackImages[pose.image].name, position[0].toString(), position[1].toString(), position[2].toString()]
+    let pose = landmark.pose
+    let position = landmark.position
+    let row: Array<string> = [distance.label, landmark.label, landmark.getColorHEX(), pose.marker.x.toString(), pose.marker.y.toString(), imagesStore.stackImages[pose.image].name, position.x.toString(), position.y.toString(), position.z.toString()]
     rows.push(row)
   })
   })
@@ -122,8 +122,6 @@ function onSubmit(event: Event) {
 function importLandmarks(jsonData: string) {
   let jsonObject = JSON.parse(jsonData)
   let mapData: Map<string, any> = new Map(Object.entries(jsonObject));
-  console.log(mapData)
-
   landmarksStore.adjustFactor = mapData.get("scale_factor")
 
 
@@ -133,7 +131,7 @@ function importLandmarks(jsonData: string) {
     
     let landmarks = distanceMap.get("landmarks").map((landmarkObject : Object) => {
       let landmarkMap = new Map(Object.entries(landmarkObject))
-      return new Landmark(landmarksStore.generateID(), landmarkMap.get("label"), landmarkMap.get("pose"), Color(landmarkMap.get("color")))
+      return new Landmark(landmarksStore.generateID(), landmarkMap.get("label"), landmarkMap.get("pose"), landmarkMap.get("position"), Color(landmarkMap.get("color")))
     })
       
     let distance = new Distance(distanceMap.get("label"), landmarks, Color(distanceMap.get("color")))

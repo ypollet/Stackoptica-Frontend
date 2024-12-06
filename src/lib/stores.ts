@@ -66,11 +66,7 @@ export const useImagesStore = defineStore('images', {
 
   persist: {
     storage: sessionStorage,
-    key: 'images',
-    afterHydrate: (ctx: PiniaPluginContext) => {
-      console.log("Restore Images Store")
-      console.log(ctx.store.$state)
-    }
+    key: 'images'
   },
 })
 
@@ -110,7 +106,6 @@ export const useLandmarksStore = defineStore('landmarks', {
     key: 'landmarks',
     afterHydrate: (ctx: PiniaPluginContext) => {
       // restore landmarks
-      console.log("Restore Landmarks")
       let landmarks = new Array<Landmark>()
       ctx.store.$state.landmarks.forEach((jsonObject : Landmark) => {
         let landmark = new Landmark(jsonObject.id, jsonObject.label, jsonObject.pose, jsonObject.position, Color(jsonObject.color))
@@ -120,7 +115,6 @@ export const useLandmarksStore = defineStore('landmarks', {
 
       let distances = new Array<Distance>()
       ctx.store.$state.distances.forEach((jsonObject : Distance) => {
-        console.log(jsonObject.landmarks)
         let landmarks = jsonObject.landmarks.map((x : Landmark) => new Landmark(x.id, x.label, x.pose, x.position, Color(x.color)))
         let distance = new Distance(jsonObject.label, landmarks, Color(jsonObject.color))
         distances.push(distance)

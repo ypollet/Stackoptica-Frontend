@@ -12,7 +12,6 @@ const settingsStore = useSettingsStore()
 const route=useRoute();
 const imageStore = useImagesStore()
 
-console.log("Params : " + route.params)
 imageStore.setPath(route.params.id as string)
 
 </script>

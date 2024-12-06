@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref} from 'vue';
+import { ref } from 'vue';
 
 import { Loader2 } from 'lucide-vue-next';
 
@@ -28,19 +28,17 @@ const repository = RepositoryFactory.get(repositorySettings.type)
 
 function getImages(): Promise<ProjectData> {
   return repository.getImages(imageStore.objectPath).then((data) => {
-    console.log("images : length = " + data.stackImages.length)
-    imageStore.stackImages = data.stackImages.map((image_name) => 
-    {
-      return { 
-        "name" : image_name, 
-        "image" : repository.getThumbnail(imageStore.objectPath, image_name) 
+    imageStore.stackImages = data.stackImages.map((image_name) => {
+      return {
+        "name": image_name,
+        "image": repository.getThumbnail(imageStore.objectPath, image_name)
       }
     })
     imageStore.size = data.size
     imageStore.individualImages = new Map()
     data.individualImages.forEach((value, key) => {
-      imageStore.individualImages.set(key, {"name" : value, "image" : repository.getThumbnail(imageStore.objectPath, value)})
-    } )
+      imageStore.individualImages.set(key, { "name": value, "image": repository.getThumbnail(imageStore.objectPath, value) })
+    })
     return data
   })
 }
@@ -55,10 +53,10 @@ function getImages(): Promise<ProjectData> {
     </div>
     <div v-if="data" class="w-full h-full flex flex-col items-center">
       <div class="flex grow flex-row w-full justify-start">
-        <Label class="border p-2">{{ imageStore.selectedImage!.name }} {{  imageStore.index+1 }}/{{  imageStore.stackImages.length }}</Label>
+        <Label class="border p-2">{{ imageStore.selectedImage!.name }} {{ imageStore.index + 1 }}/{{
+          imageStore.stackImages.length }}</Label>
       </div>
-      <ImageViewer class="object-fit" aspect-ratio="auto"
-        draggable="false"/>
+      <ImageViewer class="object-fit" aspect-ratio="auto" draggable="false" />
     </div>
   </div>
 </template>
