@@ -54,12 +54,7 @@ function getImages(): Promise<ProjectData> {
     </div>
     <div v-if="data" class="w-full h-full flex flex-col items-center">
       <div class="flex grow flex-row w-full justify-start">
-<<<<<<< HEAD
-        <Label class="border p-2">{{ imageStore.selectedImage!.name }} {{ imageStore.index + 1 }}/{{
-          imageStore.stackImages.length }}</Label>
-=======
         <Label class="border p-2">{{ imageStore.selectedImage!.label }} {{  imageStore.index+1 }}/{{  imageStore.stackImages.length }}</Label>
->>>>>>> 763b714 (Feat : change stack.json to fit more Orthanc)
       </div>
       <ImageViewer class="object-fit" aspect-ratio="auto" draggable="false" />
     </div>
