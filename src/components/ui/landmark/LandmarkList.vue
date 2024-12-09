@@ -70,7 +70,7 @@ function removeLandmark(id: string) {
             </div>
             <div class="flex items-center h-full w-auto justify-end space-x-3 pr-3">
               <Separator orientation="vertical" class="h-full w-0.5" />
-              <Label class="whitespace-nowrap">{{ imagesStore.getImageName(landmark.pose.image) }}</Label>
+              <Label class="whitespace-nowrap">{{ landmark.pose.image.label }}</Label>
             </div>
             <div class="flex items-center justify-end">
               <Button class="w-6 h-6 p-0 mr-3" v-show="landmark.show" variant="secondary"

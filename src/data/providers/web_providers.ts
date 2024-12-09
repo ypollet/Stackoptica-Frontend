@@ -27,7 +27,7 @@ export class WebProvider implements DataProvider {
     }
 
     async computeLandmarkPosition(objectPath: string, pose : Pose): Promise<AxiosResponse> {
-        const path = this.server + "/" + objectPath +'/position?x=' + pose.marker.x + "&y=" + pose.marker.y + "&imageIndex=" + pose.image;
+        const path = this.server + "/" + objectPath + "/" + pose.image.name + '/position?x=' + pose.marker.x + "&y=" + pose.marker.y;
         return axios.get(path)
     }
 }

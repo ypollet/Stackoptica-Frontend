@@ -251,7 +251,7 @@ function drawMarker(ctx: CanvasRenderingContext2D, landmark: Landmark, radius: n
   ctx.fillStyle = landmark.getColorHEX()
   ctx.fill();
   ctx.lineWidth = radius / 2;
-  ctx.strokeStyle = (landmark.getPose().image == imagesStore.index || imagesStore.image != "stack") ? "black" : "white";
+  ctx.strokeStyle = (landmark.getPose().image.name == imagesStore.selectedImage!.name || imagesStore.image != "stack") ? "black" : "white";
   ctx.stroke();
   ctx.closePath()
 }
@@ -356,7 +356,7 @@ function startDrag(event: MouseEvent) {
   else if (event.button == 2) {
     let pose = {
       marker : pos,
-      image : imagesStore.index
+      image : imagesStore.selectedImage!
     } as Pose
     if (!onImage(pos)) {
       // Image not clicked
@@ -408,7 +408,7 @@ function stopDrag(event: MouseEvent) {
     if (landmarkDragged.value != null) {
       //update pos of landmark
       let landmark = landmarkDragged.value
-      landmark.setPose(imagesStore.index, getPos(event))
+      landmark.setPose(imagesStore.selectedImage!, getPos(event))
       repository.computeLandmarkPosition(imagesStore.objectPath, landmark.pose).then((position) => {
         landmark.setPosition(position)
       })

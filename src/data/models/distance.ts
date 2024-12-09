@@ -31,6 +31,7 @@ export class Distance {
                 math.abs(this.landmarks[i].position.z - this.landmarks[i-1].position.z)
             ])
         }
+        console.log(distance.length)
         return distance
     }
 

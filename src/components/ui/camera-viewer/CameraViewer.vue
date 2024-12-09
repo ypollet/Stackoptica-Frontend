@@ -28,16 +28,17 @@ const repository = RepositoryFactory.get(repositorySettings.type)
 
 function getImages(): Promise<ProjectData> {
   return repository.getImages(imageStore.objectPath).then((data) => {
-    imageStore.stackImages = data.stackImages.map((image_name) => {
+    imageStore.stackImages = data.stackImages.map((image_data) => {
       return {
-        "name": image_name,
-        "image": repository.getThumbnail(imageStore.objectPath, image_name)
+        "name": image_data[0],
+        "label": image_data[1],
+        "image": repository.getThumbnail(imageStore.objectPath, image_data[0])
       }
     })
     imageStore.size = data.size
     imageStore.individualImages = new Map()
     data.individualImages.forEach((value, key) => {
-      imageStore.individualImages.set(key, { "name": value, "image": repository.getThumbnail(imageStore.objectPath, value) })
+      imageStore.individualImages.set(key, { "name": value[0], "label": value[1], "image": repository.getThumbnail(imageStore.objectPath, value[0]) })
     })
     return data
   })
@@ -53,8 +54,12 @@ function getImages(): Promise<ProjectData> {
     </div>
     <div v-if="data" class="w-full h-full flex flex-col items-center">
       <div class="flex grow flex-row w-full justify-start">
+<<<<<<< HEAD
         <Label class="border p-2">{{ imageStore.selectedImage!.name }} {{ imageStore.index + 1 }}/{{
           imageStore.stackImages.length }}</Label>
+=======
+        <Label class="border p-2">{{ imageStore.selectedImage!.label }} {{  imageStore.index+1 }}/{{  imageStore.stackImages.length }}</Label>
+>>>>>>> 763b714 (Feat : change stack.json to fit more Orthanc)
       </div>
       <ImageViewer class="object-fit" aspect-ratio="auto" draggable="false" />
     </div>

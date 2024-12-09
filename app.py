@@ -70,19 +70,21 @@ def images(id):
   encoded_images = []
   for image in stack_file["stack"]:
     try:
-      encoded_images.append(image["name"])
+      print(image)
+      encoded_images.append(image)
     except Exception as error:
        print(error)
        continue
+  encoded_images.sort(key=lambda image_name : stack_file["stack"][image_name]["SlicePosition"][2])
+  encoded_images = [[x,x] for x in encoded_images]
   stackedImages = dict()
   for image in stack_file["Stacked_images"]:
     try:
       # file name of stacked image
-      stackedImages[image] = stack_file['Stacked_images'][image]
+      stackedImages[image] = [stack_file['Stacked_images'][image], stack_file['Stacked_images'][image]]
     except Exception as error:
        print(error)
        continue
-  print(stackedImages)
   to_jsonify["stackImages"] = encoded_images
   to_jsonify["individualImages"] = stackedImages
   to_jsonify["size"] = {
@@ -92,12 +94,11 @@ def images(id):
   
   return jsonify(to_jsonify)
 
-@app.route('/<id>/position')
+@app.route('/<id>/<image_id>/position')
 @cross_origin()
-def compute_landmark(id):
+def compute_landmark(id, image_id):
   x = float(request.args.get("x"))
   y = float(request.args.get("y"))
-  image_index = int(request.args.get("imageIndex"))
   
   directory = f"{DATA_FOLDER}/{id}"
   if not os.path.exists(directory):
@@ -105,7 +106,7 @@ def compute_landmark(id):
   with open(f"{directory}/stack.json", "r") as f:
     stack_file = json.load(f)
     
-  image_data = stack_file["stack"][image_index]
+  image_data = stack_file["stack"][image_id]
   
   position = {
     "x" : x*image_data["PixelRatio"][0] + image_data["SlicePosition"][0],

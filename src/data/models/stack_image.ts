@@ -1,6 +1,12 @@
 export type StackImage = {
     name: string,
     image: string,
+    label: string
+}
+
+export type ImageName = {
+    name: string,
+    label: string
 }
 
 export type Size = {

@@ -39,7 +39,7 @@ export const useImagesStore = defineStore('images', {
     offset : {x:0, y:0}
   }),
   getters: {
-    selectedImage : (state) => (state.index >= 0 && state.index < state.stackImages.length && state.image == "stack") ?  state.stackImages[state.index] : (!(state.individualImages.has(state.image))) ? {"name":"RBINS Logo","image":"https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg"} : state.individualImages.get(state.image)
+    selectedImage : (state) => (state.index >= 0 && state.index < state.stackImages.length && state.image == "stack") ?  state.stackImages[state.index] : (!(state.individualImages.has(state.image))) ? {"name":"RBINS Logo", "label":"RBINS","image":"https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg"} : state.individualImages.get(state.image)
   },
   actions: {
     setPath(path : string) {
