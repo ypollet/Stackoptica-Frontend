@@ -54,7 +54,7 @@ const toggleDark = useToggle(isDark)
 
 function downloadCsv() {
   const rows = [
-    ["Distance", "Label", "Color", "Pose_X", "Pose_Y", "Image", "X", "Y", "Z"]
+    ["Distance", "Label", "Color", "Pose_X", "Pose_Y", "Image", "ImageLabel", "X", "Y", "Z"]
   ];
 
   landmarksStore.distances.forEach((distance) => {
@@ -62,7 +62,7 @@ function downloadCsv() {
     landmark = landmark as Landmark
     let pose = landmark.pose
     let position = landmark.position
-    let row: Array<string> = [distance.label, landmark.label, landmark.getColorHEX(), pose.marker.x.toString(), pose.marker.y.toString(), imagesStore.stackImages[pose.image].name, position.x.toString(), position.y.toString(), position.z.toString()]
+    let row: Array<string> = [distance.label, landmark.label, landmark.getColorHEX(), pose.marker.x.toString(), pose.marker.y.toString(), pose.image.name, pose.image.label, position.x.toString(), position.y.toString(), position.z.toString()]
     rows.push(row)
   })
   })

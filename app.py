@@ -25,7 +25,7 @@ app.config.from_object(__name__)
 
 # definitions
 SITE = {
-        'logo': 'Sphaeroptica',
+        'logo': 'Stackoptica',
         'version': '2.0.0'
 }
 

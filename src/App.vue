@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
 import { useImagesStore } from './lib/stores';
+import ViewerView from './views/ViewerView.vue';
 
 const imageStore = useImagesStore()
 
@@ -16,6 +16,6 @@ function changePicture(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="overflow-hidden"> <RouterView @keydown="changePicture"/></div>
+  <div class="overflow-hidden"> <ViewerView @keydown="changePicture"/></div>
 </template>
 

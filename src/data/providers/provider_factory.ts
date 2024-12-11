@@ -1,3 +1,4 @@
+import { OrthancProvider } from "./orthanc_providers";
 import type { DataProvider } from "./providers";
 import { WebProvider } from "./web_providers";
 import { providerSettings } from "@/config/appSettings"
@@ -9,6 +10,9 @@ export class ProviderFactory{
         if(this._instances.get(type) == null){
             if(type == "WEB"){
                 return new WebProvider(providerSettings.url)
+            }
+            if(type == "ORTHANC"){
+                return new OrthancProvider(providerSettings.url)
             }
         }
         return this._instances.get(type)!
