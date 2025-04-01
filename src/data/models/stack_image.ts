@@ -1,12 +1,18 @@
 export type StackImage = {
     name: string,
+    label: string,
     image: string,
-    label: string
+    thumbnail: string
 }
 
 export type ImageName = {
     name: string,
     label: string
+}
+
+export type ImageData = {
+    image: string,
+    thumbnail: string
 }
 
 export type Size = {
@@ -18,9 +24,10 @@ export type ProjectData = {
     stackImages: Array<string>,
     individualImages: Map<string, string>,
     size: Size,
+    thumbnails: boolean
 }
 
 export type Ratio = {
-    ratioH: number,
-    ratioW: number
+    height: number,
+    width: number
 }

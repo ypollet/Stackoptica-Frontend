@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useImagesStore, useLandmarksStore } from "@/lib/stores";
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ThumbnailViewer from "../thumbnail-viewer/ThumbnailViewer.vue";
 
 const imageStore = useImagesStore()
 const landmarksStore = useLandmarksStore()
@@ -13,6 +14,11 @@ const landmarksStore = useLandmarksStore()
 
 <template>
   <div class="flex flex-col pb-[12px] w-auto h-full">
+    <div class="flex justify-center">
+      <div class="w-4/5">
+        <ThumbnailViewer/>
+      </div>
+    </div>
     <div class="flex-none space-y-4 py-4">
       <ToggleGroup type="single" :model-value="imageStore.image" @update:modelValue="$event => imageStore.image = $event.toString()">
         <ToggleGroupItem value="stack">

@@ -32,13 +32,19 @@ function getImages(): Promise<ProjectData> {
       return {
         "name": image_data[0],
         "label": image_data[1],
-        "image": repository.getThumbnail(imageStore.objectPath, image_data[0])
+        "image": repository.getFullImage(imageStore.objectPath, image_data[0]),
+        "thumbnail": (data.thumbnails) ? repository.getThumbnail(imageStore.objectPath, image_data[0]) : ""
       }
     })
     imageStore.size = data.size
     imageStore.individualImages = new Map()
     data.individualImages.forEach((value, key) => {
-      imageStore.individualImages.set(key, { "name": value[0], "label": value[1], "image": repository.getThumbnail(imageStore.objectPath, value[0]) })
+      imageStore.individualImages.set(key, {
+        "name": value[0],
+        "label": value[1],
+        "image": repository.getFullImage(imageStore.objectPath, value[0]),
+        "thumbnail": (data.thumbnails) ? repository.getThumbnail(imageStore.objectPath, value[0]) : ""
+      })
     })
     return data
   })

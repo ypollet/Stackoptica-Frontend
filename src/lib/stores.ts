@@ -36,10 +36,16 @@ export const useImagesStore = defineStore('images', {
     individualImages : new Map<string, StackImage>(),
     size : { width : -1, height : -1},
     zoom : -1,
-    offset : {x:0, y:0}
+    offset : {x:0, y:0},
+    zoomRect: {
+      top: 0,
+      left: 0,
+      width: 0,
+      height:0 
+    },
   }),
   getters: {
-    selectedImage : (state) => (state.index >= 0 && state.index < state.stackImages.length && state.image == "stack") ?  state.stackImages[state.index] : (!(state.individualImages.has(state.image))) ? {"name":"RBINS Logo", "label":"RBINS","image":"https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg"} : state.individualImages.get(state.image)
+    selectedImage : (state) => (state.index >= 0 && state.index < state.stackImages.length && state.image == "stack") ?  state.stackImages[state.index] : (!(state.individualImages.has(state.image))) ? {"name":"RBINS Logo", "label":"RBINS","thumbnail" : "","image":"https://www.naturalsciences.be/bundles/8c62adb1e0fbef009ef7c06c69a991890012e203/img/logos/logo.svg"} : state.individualImages.get(state.image)!
   },
   actions: {
     setPath(path : string) {
