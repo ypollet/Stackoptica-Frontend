@@ -21,8 +21,8 @@ export type Size = {
 }
 
 export type ProjectData = {
-    stackImages: Array<string>,
-    individualImages: Map<string, string>,
+    stackImages: Array<ImageName>,
+    individualImages: Map<string, ImageName>,
     size: Size,
     thumbnails: boolean
 }

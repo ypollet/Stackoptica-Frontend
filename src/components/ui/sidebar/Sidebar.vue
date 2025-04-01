@@ -20,7 +20,7 @@ const landmarksStore = useLandmarksStore()
       </div>
     </div>
     <div class="flex-none space-y-4 py-4">
-      <ToggleGroup type="single" :model-value="imageStore.image" @update:modelValue="$event => imageStore.image = $event.toString()">
+      <ToggleGroup type="single" :model-value="imageStore.image" @update:modelValue="$event => {if($event != undefined) {imageStore.image = $event.toString()}}">
         <ToggleGroupItem value="stack">
           Stack
         </ToggleGroupItem>

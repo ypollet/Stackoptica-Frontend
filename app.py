@@ -82,22 +82,26 @@ def images(id):
     for image in stack_file["stack"]:
         try:
             print(image)
-            encoded_images.append(image)
+            encoded_images.append(
+                {
+                    "name": image,
+                    "label": image,
+                }
+            )
         except Exception as error:
             print(error)
             continue
     encoded_images.sort(
-        key=lambda image_name: stack_file["stack"][image_name]["SlicePosition"][2]
+        key=lambda image: stack_file["stack"][image["name"]]["SlicePosition"][2]
     )
-    encoded_images = [[x, x] for x in encoded_images]
     stackedImages = dict()
     for image in stack_file["Stacked_images"]:
         try:
             # file name of stacked image
-            stackedImages[image] = [
-                stack_file["Stacked_images"][image],
-                stack_file["Stacked_images"][image],
-            ]
+            stackedImages[image] = {
+                "name": stack_file["Stacked_images"][image],
+                "label": stack_file["Stacked_images"][image],
+            }
         except Exception as error:
             print(error)
             continue
