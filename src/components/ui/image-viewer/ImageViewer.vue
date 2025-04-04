@@ -26,7 +26,7 @@ const props = defineProps<{
 }>()
 
 const { selectedImage } = storeToRefs(imagesStore)
-
+const screenZoom = ref<number>(1)
 
 watch(
   selectedImage,
@@ -88,7 +88,6 @@ onMounted(() => {
 })
 
 function loaded() {
-  console.log("load")
   nextTick(() => {
     if (imagesStore.zoom <= 0) {
       screenFit()
@@ -104,7 +103,6 @@ function loaded() {
             full_image.alt = image_name
 
             full_image.onload = (ev: Event) => {
-              console.log("fully loaded")
               if (base_image.value.alt.endsWith(full_image.alt)) {
                 base_image.value = full_image
                 update()
@@ -341,8 +339,8 @@ function screenFit() {
     canvas.value.width = Math.floor(imageContainer.value.clientWidth)
     canvas.value.height = Math.floor(imageContainer.value.clientHeight)
 
-    imagesStore.zoom = Math.min(imageContainer.value.clientWidth / imagesStore.size.width, imageContainer.value.clientHeight / imagesStore.size.height)
-  }
+    screenZoom.value = Math.min(imageContainer.value.clientWidth / imagesStore.size.width, imageContainer.value.clientHeight / imagesStore.size.height)
+    imagesStore.zoom = screenZoom.value  }
 }
 
 function getRatio(): Ratio {
@@ -378,11 +376,8 @@ function updateOffset(movementX: number, movementY: number) {
 }
 
 function updateZoom(zoomDelta: number) {
-
-  imagesStore.zoom = +(imagesStore.zoom * (1 + zoomDelta / 20)).toFixed(2)
-
-  //check value
-  imagesStore.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, imagesStore.zoom))
+  imagesStore.zoom = +(imagesStore.zoom * (1 + zoomDelta / 20)).toFixed(5)
+  imagesStore.zoom = Math.max(ZOOM_MIN*screenZoom.value, Math.min(ZOOM_MAX, imagesStore.zoom))
 }
 
 

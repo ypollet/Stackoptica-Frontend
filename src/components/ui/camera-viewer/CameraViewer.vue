@@ -28,8 +28,6 @@ const repository = RepositoryFactory.get(repositorySettings.type)
 
 function getImages(): Promise<ProjectData> {
   return repository.getImages(imageStore.objectPath).then((data) => {
-    console.log("Thumbnails : ", data.thumbnails)
-    console.log(data.stackImages)
     imageStore.stackImages = data.stackImages.map((image_data) => {
       return {
         name: image_data.name.split('').join(''),

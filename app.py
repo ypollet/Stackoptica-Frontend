@@ -91,6 +91,10 @@ def images(id):
         except Exception as error:
             print(error)
             continue
+    for image in encoded_images:
+        print(stack_file["stack"])
+        print(image)
+        print(image["name"])
     encoded_images.sort(
         key=lambda image: stack_file["stack"][image["name"]]["SlicePosition"][2]
     )
