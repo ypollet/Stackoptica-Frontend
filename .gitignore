@@ -10,3 +10,4 @@ dist
 .vscode
 node.html
 >>>>>>> d9b5a0f (Start auto label placement)
+__pycache__/
