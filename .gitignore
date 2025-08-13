@@ -2,5 +2,11 @@ node_modules
 .venv
 test.py
 __pycache__dist
+<<<<<<< HEAD
 dist
 *.local
+=======
+.stack/
+.vscode
+node.html
+>>>>>>> d9b5a0f (Start auto label placement)

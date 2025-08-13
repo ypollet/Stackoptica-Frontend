@@ -187,6 +187,34 @@ function drawImage() {
       }
 
     })
+    let msg = "Hello World"
+    let x = 4000
+    let y = 4000
+    
+    ctx.font = (20 * ratio.width / zoomX) + "px Arial";
+    let textMetrics = ctx.measureText(msg);
+    ctx.fillText(msg, 4000 * ratio.width + shiftCanvas.value.x, 4000 * ratio.height + shiftCanvas.value.y);
+
+    ctx.beginPath();
+    ctx.moveTo(
+      x - textMetrics.actualBoundingBoxLeft - 5 / zoomX + shiftCanvas.value.x,
+      y - textMetrics.actualBoundingBoxAscent - 5 / zoomY + shiftCanvas.value.y
+    );
+    ctx.lineTo(
+      x + textMetrics.actualBoundingBoxRight +5 / zoomX + shiftCanvas.value.x, 
+      y - textMetrics.actualBoundingBoxAscent - 5 / zoomY + shiftCanvas.value.y
+    );
+    ctx.lineTo(
+      x + textMetrics.actualBoundingBoxRight +5 / zoomX + shiftCanvas.value.x, 
+      y + textMetrics.actualBoundingBoxDescent +5 / zoomY + shiftCanvas.value.y
+    );
+    ctx.lineTo(
+      x - textMetrics.actualBoundingBoxLeft - 5 / zoomX + shiftCanvas.value.x,
+      y + textMetrics.actualBoundingBoxDescent +5 / zoomY + shiftCanvas.value.y
+    );
+
+    ctx.closePath();
+    ctx.stroke();
 
 
     // Stroke the points
