@@ -470,10 +470,11 @@ function startDrag(event: MouseEvent) {
       }
     }
     //triangulate landmark
-    update()
+    
     // reinit landmarkDrag
     //reinitDraggedLandmark()
   }
+  update()
 }
 
 
