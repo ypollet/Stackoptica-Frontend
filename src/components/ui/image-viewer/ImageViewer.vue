@@ -187,8 +187,6 @@ function drawImage() {
       }
 
     })
-    
-
 
     // Stroke the points
     landmarksStore.distances.forEach((distance) => {
