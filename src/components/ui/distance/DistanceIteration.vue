@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useImagesStore, useLandmarksStore } from "@/lib/stores";
+import { useLandmarksStore } from "@/lib/stores";
 
 import { Landmark } from "@/data/models/landmark";
 
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from '@/components/ui/input'
 import draggable from "vuedraggable"
 
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
 
 import { X, RefreshCcw, Eye, EyeOff } from "lucide-vue-next";
 import { Distance } from "@/data/models/distance";
@@ -30,11 +30,9 @@ const props = defineProps({
 })
 
 const landmarksStore = useLandmarksStore()
-const imagesStore = useImagesStore()
 
 const scrollSnapType = ref<boolean>(true)
-const landmarksElements = ref<InstanceType<typeof draggable> | null>(null)
-const landmarksScroll = ref<HTMLElement | null>(null)
+const input = useTemplateRef('input')
 
 
 function changeColor(event: Event) {
@@ -68,6 +66,15 @@ function deleteDistance() {
     }
     landmarksStore.distances.splice(props.index, 1)
 }
+function showInput(){
+    props.distance.edit_label = props.showLandmarks
+
+    if(props.distance.edit_label && input.value != null){
+        input.value.focus()
+    }
+}
+
+
 </script>
 
 <template>
@@ -80,12 +87,12 @@ function deleteDistance() {
                         id="hs-color-input" :value="props.distance.getColorHEX()" title="Choose your color"
                         @change="changeColor($event)">
                     <Label v-show="!props.distance.edit_label" class="flex whitespace-nowrap w-36 font-normal text-lg"
-                        @dblclick="props.distance.edit_label = true">{{ props.distance.label }}
+                        @dblclick="showInput">{{ props.distance.label }}
                     </Label>
-                    <Input v-show="props.distance.edit_label" type="text" :model-value="props.distance.label"
+                    <Input v-show="props.distance.edit_label" ref="input" type="text" :model-value="props.distance.label"
                         class="flex h-auto w-full px-0" @focusout="props.distance.edit_label = false"
                         @keyup.enter="props.distance.edit_label = false"
-                        @update:model-value="changeLabelDistance($event)" />
+                        @update:model-value="changeLabelDistance($event)"/>
                 </div>
                 <div class="flex row justify-end space-x-3">
                     <Button class="relative w-6 h-6 p-0" v-show="props.distance.show" variant="secondary"

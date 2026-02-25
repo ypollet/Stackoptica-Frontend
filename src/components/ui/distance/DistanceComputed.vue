@@ -10,14 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
-import { X } from "lucide-vue-next";
+import { Circle, X } from "lucide-vue-next";
 
 import * as math from "mathjs"
 import { Scale } from "@/lib/utils";
 
 const STEP = 0.01
 const landmarksStore = useLandmarksStore()
-const imagesStore = useImagesStore()
 
 function computeDistance(intervals: [number, number, number][]): number {
     let dist = 0
@@ -70,6 +69,7 @@ function resetScale() {
             <div v-for="(distance, index) in landmarksStore.distances" class="flex flex-col min-w-full w-fit h-10">
                 <div class="flex flex-row items-center justify-between space-x-3 px-3 w-full h-full">
                     <div class="flex flex-row items-center justify-start space-x-3">
+                        <Circle stroke-width="1" :fill="distance.getColorHEX()"/>
                         <Label class="flex whitespace-nowrap w-auto">{{ distance.label }}</Label>
                     </div>
                     <div class="flex flex-row items-center justify-end space-x-3">

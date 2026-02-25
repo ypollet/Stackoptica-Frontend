@@ -50,7 +50,6 @@ site_data = {"site": SITE, "owner": OWNER}
 # landing page
 @app.route("/<id>")
 def welcome(id):
-    print(f"id : {id}")
     return render_template("index.html", **site_data)
 
 
@@ -81,7 +80,6 @@ def images(id):
     encoded_images = []
     for image in stack_file["stack"]:
         try:
-            print(image)
             encoded_images.append(
                 {
                     "name": image,
@@ -91,10 +89,6 @@ def images(id):
         except Exception as error:
             print(error)
             continue
-    for image in encoded_images:
-        print(stack_file["stack"])
-        print(image)
-        print(image["name"])
     encoded_images.sort(
         key=lambda image: stack_file["stack"][image["name"]]["SlicePosition"][2]
     )

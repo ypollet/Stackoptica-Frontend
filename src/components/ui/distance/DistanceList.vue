@@ -5,6 +5,7 @@ import { DistanceIteration } from ".";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { storeToRefs } from "pinia";
 import type { Distance } from "@/data/models/distance";
+import { Circle } from "lucide-vue-next";
 
 const landmarksStore = useLandmarksStore()
 
@@ -23,11 +24,18 @@ function updateSelectedDist(payload : string){
             </SelectTrigger>
             <SelectContent>
                 <SelectGroup>
-                    <SelectLabel>Scale</SelectLabel>
                     <SelectItem class="h-8" value="-1">
+                        <div class="flex flex-row space-x-2">
+                            <Circle stroke-width="1"/>
+                            <span class="content-center">New..</span>
+                        </div>
                     </SelectItem>
                     <SelectItem class="h-8" v-for="(distance, index) in landmarksStore.distances" :value="index.toString()">
-                        {{ distance.label }}
+                        <div class="flex flex-row space-x-2">
+                            <Circle stroke-width="1" :fill="distance.getColorHEX()"/>
+                            <span class="content-center">{{ distance.label }}</span>
+                            
+                        </div>
                     </SelectItem>
                 </SelectGroup>
             </SelectContent>
