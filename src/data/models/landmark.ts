@@ -7,6 +7,14 @@ export type Pose = {
     image: ImageName
 }
 
+export type LandmarkObject = {
+    id: string
+    label: string
+    pose: Pose
+    position : Position
+    color: string
+}
+
 export class Landmark {
     id: string
     label: string
