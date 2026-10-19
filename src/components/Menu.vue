@@ -173,8 +173,7 @@ function onSubmit(event: Event) {
 <template>
   <div>
     <Dialog>
-      <Menubar class="rounded border-b z-100 h-10">
-
+      <Menubar class="border-none z-100 h-10">
         <MenubarMenu>
           <MenubarTrigger class="relative">
             File

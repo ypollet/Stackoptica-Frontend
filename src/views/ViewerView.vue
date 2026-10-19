@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sidebar } from "@/components/ui/sidebar";
 import { useSettingsStore, useImagesStore } from "@/lib/stores";
 import { CameraViewer } from "@/components/ui/camera-viewer"
+import { MainLogo } from "@/components/ui/logo";
 
 const settingsStore = useSettingsStore()
 const imageStore = useImagesStore()
@@ -16,16 +17,21 @@ imageStore.setPath(urlParams.get('series') as string)
 
 <template>
   <main class="h-screen">
-    <Menu class="sticky menu top-0 flex flex-row grow z-50"></Menu>
+    <div class="flex menu">
+      <Menu class="sticky top-0 flex flex-row grow z-50" />
+      <div class="flex items-center space-x-2 pr-2">
+        <MainLogo :height=30 :width=30 />
+        <h1 class="font-dejavu font-bold text-brand">Stackoptica</h1>
+      </div>
+    </div>
     <Separator></Separator>
-    <div class="rest_height flex"
-    :class="settingsStore.isLeft ? 'flex-row' : 'flex-row-reverse'">
+    <div class="rest_height flex" :class="settingsStore.isLeft ? 'flex-row' : 'flex-row-reverse'">
       <div class="h-full w-96 flex-none overflow-auto rounded-md border p-4">
         <Sidebar />
       </div>
 
       <div class="h-full w-0 flex-auto items-center justify-center">
-        <CameraViewer/>
+        <CameraViewer />
       </div>
     </div>
   </main>
@@ -33,7 +39,7 @@ imageStore.setPath(urlParams.get('series') as string)
 
 <style scoped>
 .menu {
-  height: 60px;
+  height: 40;
 }
 
 .sidebar {
@@ -41,7 +47,7 @@ imageStore.setPath(urlParams.get('series') as string)
 }
 
 .rest_height {
-  height: calc(100% - 61px);
+  height: calc(100% - 41px);
 }
 
 .rest_width {
