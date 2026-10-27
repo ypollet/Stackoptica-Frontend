@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useImagesStore, useLandmarksStore } from "@/lib/stores";
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import ThumbnailViewer from "../thumbnail-viewer/ThumbnailViewer.vue";
+import Label from "../label/Label.vue";
 
 const imageStore = useImagesStore()
 const landmarksStore = useLandmarksStore()
@@ -16,19 +17,26 @@ const landmarksStore = useLandmarksStore()
   <div class="flex flex-col pb-[12px] w-auto h-full">
     <div class="flex justify-center">
       <div class="w-4/5">
-        <ThumbnailViewer/>
+        <ThumbnailViewer />
       </div>
     </div>
     <div class="flex-none space-y-4 py-4">
-      <ToggleGroup type="single" :model-value="imageStore.image" @update:modelValue="$event => {if($event != undefined) {imageStore.image = $event.toString()}}">
+      <div class="flex grow flex-row w-full justify-center items-center  space-x-2">
+        <Label>{{ imageStore.selectedImage!.label }}</Label>
+        <Label v-if="imageStore.image == 'stack'">{{ imageStore.index + 1 }}/{{ imageStore.stackImages.length }}</Label>
+      </div>
+      <ToggleGroup type="single" :model-value="imageStore.image"
+        @update:modelValue="$event => { if ($event != undefined) { imageStore.image = $event.toString() } }">
         <ToggleGroupItem value="stack">
           Stack
         </ToggleGroupItem>
         <ToggleGroupItem v-for="stackedImage in imageStore.individualImages.keys()" :value="stackedImage">
           {{ stackedImage }}
         </ToggleGroupItem>
-    </ToggleGroup>
+      </ToggleGroup>
+      
     </div>
+
     <div class="flex-none space-y-4 py-4">
       <div class="px-3 py-2">
         <Slider :model-value="[imageStore.index]" :max="imageStore.stackImages.length - 1" :step="1"

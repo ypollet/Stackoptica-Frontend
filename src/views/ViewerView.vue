@@ -26,7 +26,7 @@ imageStore.setPath(urlParams.get('series') as string)
     </div>
     <Separator></Separator>
     <div class="rest_height flex" :class="settingsStore.isLeft ? 'flex-row' : 'flex-row-reverse'">
-      <div class="h-full w-96 flex-none overflow-auto rounded-md border p-4">
+      <div class="h-full w-96 flex-none overflow-auto border p-4">
         <Sidebar />
       </div>
 

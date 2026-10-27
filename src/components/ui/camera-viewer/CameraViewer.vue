@@ -60,10 +60,6 @@ function getImages(): Promise<ProjectData> {
       <div class="text-red-600">{{ error }}</div>
     </div>
     <div v-if="data" class="w-full h-full flex flex-col items-center">
-      <div class="flex grow flex-row w-full justify-start border p-2 space-x-2">
-        <Label>{{ imageStore.selectedImage!.label }}</Label>
-        <Label v-if="imageStore.image=='stack'">{{ imageStore.index+1 }}/{{ imageStore.stackImages.length }}</Label>
-      </div>
       <ImageViewer class="object-fit" aspect-ratio="auto" draggable="false" />
     </div>
   </div>
